@@ -1,0 +1,525 @@
+---
+stepsCompleted: ["step-01-init", "step-02-context", "step-03-starter", "step-04-decisions", "step-05-patterns", "step-06-structure", "step-07-validation", "step-08-complete"]
+workflowType: 'architecture'
+lastStep: 8
+status: 'pending-ux-review'
+completedAt: '2026-04-11'
+---
+
+> **⚠️ 待 UX 审阅后修改** — 等 UX 文档完成后，根据 UX 需求调整架构（组件复杂度、动画、响应式等）
+inputDocuments: ["prd.md"]
+workflowType: 'architecture'
+project_name: 'AI Smart Journal'
+user_name: 'Kei'
+date: '2026-04-11'
+---
+
+# Architecture Decision Document
+
+_This document builds collaboratively through step-by-step discovery. Sections are appended as we work through each architectural decision together._
+
+## 输入文档
+
+- PRD: `_bmad-output/planning-artifacts/prd.md` (~470 行)
+
+---
+
+## Project Context Analysis
+
+### Requirements Overview
+
+**Functional Requirements:**
+- 日记记录 (FR1-FR5): 心情表情打卡 + 自由文本 + 历史查看
+- AI 互动 (FR6-FR9): AI 回应 + 金句提炼 + 情绪标签 + Fallback
+- 情绪可视化 (FR10-FR12): 7 天波形图 + 表情标注 + 空状态引导
+- 时间胶囊 (FR13-FR14): 历史同日/相似情绪推送
+- 数据管理 (FR15-FR17): IndexedDB 持久化 + 离线队列 + 种子数据
+- 分享 (FR18): 金句卡片生成图片
+
+**Non-Functional Requirements:**
+- 首屏 ≤ 2s，AI 响应 5-8s / 超时 15s
+- API Key 服务端代理，不暴露前端
+- 全量 IndexedDB 本地存储，零上传
+- 网络断开不丢数据，pending 重试
+- API 失败时本地金句降级
+
+**Scale & Complexity:**
+
+- Primary domain: 全栈 Web App (SPA + API Proxy)
+- Complexity level: 低
+- Estimated architectural components: ~6
+
+### Technical Constraints & Dependencies
+
+- Next.js App Router + TypeScript
+- Zustand (轻量状态管理)
+- TailwindCSS + 内联样式 (动画)
+- IndexedDB via `idb` 库
+- 阿里云百炼 API (OpenAI 兼容接口)
+- 桌面浏览器 Chrome/Edge 最新版
+- 无需登录/注册/后端数据库
+
+### Cross-Cutting Concerns Identified
+
+1. **数据持久化层** — 所有日记读写走 IndexedDB，统一封装
+2. **AI 调用管道** — 超时控制 + 降级 + 打字机动画
+3. **离线处理** — pending 标记 + 异步重试
+4. **情绪数据计算** — 7 天趋势聚合 + 表情映射
+
+---
+
+## Starter Template Evaluation
+
+### Primary Technology Domain
+
+Web Application (Next.js App Router) based on PRD requirements
+
+### Starter Options Considered
+
+| 方案 | 评估 |
+|------|------|
+| `create-next-app@latest` 官方脚手架 | ✅ 推荐 — 官方维护，内置 TS + Tailwind + App Router |
+| 第三方 T3 Stack | ❌ 过度 — 包含 tRPC/Prisma 等不需要的组件 |
+| 自定义模板 | ❌ 不必要 — 官方脚手架已满足需求 |
+
+### Selected Starter: create-next-app@latest
+
+**Rationale:**
+PRD 已明确技术栈，官方脚手架覆盖所有基础需求。无需引入额外 boilerplate。
+
+**Initialization Command:**
+
+```bash
+npx create-next-app@latest ai-smart-journal \
+  --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"
+```
+
+**Architectural Decisions Provided by Starter:**
+
+**Language & Runtime:** TypeScript 完整配置，strict mode 开启
+
+**Styling Solution:** TailwindCSS 预装，PostCSS 已配置
+
+**Build Tooling:** Turbopack 开发服务器，生产构建优化内置
+
+**Testing Framework:** 未预设（本项目不写单元测试，手动验证）
+
+**Code Organization:** `src/` 目录 + App Router 文件路由
+
+**Development Experience:** 热更新、Fast Refresh、TypeScript 类型检查
+
+**需要额外安装的依赖：**
+
+| 依赖 | 用途 |
+|------|------|
+| `zustand` | 状态管理 |
+| `idb` | IndexedDB 封装 |
+| `recharts` | 情绪波形图 |
+
+**Note:** 项目初始化是第一个实现任务。
+
+---
+
+## Core Architectural Decisions
+
+### Data Architecture
+
+**IndexedDB Stores:** 多表设计
+
+| Store | 用途 |
+|-------|------|
+| `journals` | 日记条目 |
+| `appMeta` | 应用级元数据（是否已加载种子数据等） |
+
+**`journals` 数据模型：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | `string` | UUID |
+| `content` | `string` | 日记正文 |
+| `mood` | `number` | 1-5（对应 😡 😔 😐 😊 😴） |
+| `moodEmoji` | `string` | 表情符号文本 |
+| `aiResponse` | `string \| null` | AI 回应文本 |
+| `goldenQuote` | `string \| null` | 今日金句 |
+| `moodLabel` | `string \| null` | AI 识别的情绪标签 |
+| `timestamp` | `string` | ISO 时间字符串 |
+| `status` | `'pending' \| 'ai_ready' \| 'ai_done'` | AI 处理状态 |
+| `shareCount` | `number` | 金句被分享次数（可选） |
+
+**`appMeta` 数据模型：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `key` | `string` | 元数据键 |
+| `value` | `any` | 元数据值 |
+
+### Authentication & Security
+
+- API Key 存储在 `.env.local`，不提交到 git
+- 环境变量名：`DASHSCOPE_API_KEY`（阿里云百炼）
+- 提供 `.env.example` 模板，占位符 `sk-xxx`
+- 无需认证/登录（本地单用户）
+
+### API & Communication Patterns
+
+**`POST /api/journal`**
+
+请求体：`{ content: string, mood: number }`
+
+响应体（成功）：`{ response: string, goldenQuote: string, moodLabel: string, fromFallback: false }`
+
+响应体（降级）：`{ response: string, goldenQuote: string, moodLabel: "本地", fromFallback: true }`
+
+**错误处理标准：**
+- 15 秒超时 → 本地 fallback 金句
+- 网络错误 → 本地 fallback 金句
+- JSON 解析失败 → 重试一次 → 失败则 fallback
+- 所有降级不走 HTTP error，返回 200 + `fromFallback: true`
+
+### Frontend Architecture
+
+**目录结构：**
+
+```
+src/
+├── app/
+│   ├── page.tsx              # 首页（波形图 + 心情 + 输入）
+│   ├── layout.tsx            # 根布局
+│   └── globals.css           # 全局样式
+├── api/
+│   └── journal/
+│       └── route.ts          # AI 代理
+├── lib/
+│   ├── db.ts                 # IndexedDB 初始化 + CRUD
+│   ├── ai.ts                 # 本地 fallback 金句库
+│   └── seed-data.ts          # 演示数据
+├── store/
+│   └── journal.ts            # Zustand store（单一 store）
+├── components/
+│   ├── mood-selector.tsx     # 5 表情选择器
+│   ├── journal-input.tsx     # 日记输入框
+│   ├── emotion-chart.tsx     # 7 天波形图
+│   ├── golden-quote.tsx      # 金句卡片（翻转动画）
+│   └── typewriter.tsx        # 打字机效果
+└── types/
+    └── index.ts              # 全局类型定义
+```
+
+**状态管理：** 单一 Zustand store（状态少，不需要拆分）
+**图表库：** `recharts`（LineChart 满足 7 天波形需求）
+
+### Infrastructure & Deployment
+
+- 运行方式：`npm run dev` 本地开发
+- 端口：默认 3000
+- 环境变量：`.env.local` + `.env.example`
+- 部署：比赛后考虑 Vercel
+
+### Decision Impact Analysis
+
+**实现顺序：**
+1. 初始化 Next.js 项目 + 安装依赖
+2. 创建类型定义 + IndexedDB 数据层
+3. 创建 Zustand store
+4. 实现心情选择器 + 日记输入组件
+5. 实现 `/api/journal` Route Handler + AI 调用
+6. 实现情绪波形图组件
+7. 实现金句卡片 + 打字机效果
+8. 添加种子数据 + Fallback 机制
+9. 集成测试 + 视觉打磨
+
+**跨组件依赖：**
+- 心情选择器 → 触发日记输入 → 保存 IndexedDB → 调用 AI API → 更新 store → 波形图刷新
+- AI API 失败 → 触发本地 fallback → 金句卡片仍然显示
+- 种子数据 → 写入 IndexedDB → 波形图立即有内容
+
+---
+
+## Implementation Patterns & Consistency Rules
+
+### Naming Patterns
+
+**文件命名：** kebab-case — `mood-selector.tsx`, `journal-input.tsx`
+
+**组件命名：** PascalCase（导出名）— `export function MoodSelector()`
+
+**函数命名：** camelCase — `fetchJournals()`, `addJournal()`
+
+**变量命名：** camelCase — `userId`, `goldenQuote`
+
+**API 路由：** kebab-case（文件夹）— `api/journal/route.ts`
+
+**IndexedDB store：** camelCase（复数）— `journals`, `appMeta`
+
+### Format Patterns
+
+**JSON 字段：** 统一 camelCase
+
+**日期格式：** ISO 8601 字符串 — `new Date().toISOString()`
+
+**布尔值：** `true` / `false`
+
+**错误响应：** `{ error: string, fromFallback: boolean }` — 不走 HTTP error code
+
+### State Management Patterns
+
+| 约定 | 说明 |
+|------|------|
+| 更新方式 | Immer 风格不可变更新：`set(state => ({ ...state, journals: [...state.journals, new] }))` |
+| Loading 命名 | `loading`（全局）、`saving`（单条） |
+| 错误存储 | `error: string \| null` |
+| Source of Truth | IndexedDB → 页面加载时从 DB 读 → store 作为运行时状态 |
+
+### Error Handling Patterns
+
+| 场景 | 处理方式 |
+|------|----------|
+| AI API 失败 | 返回 200 + `fromFallback: true`，不走 HTTP error |
+| 网络断开 | 日记先写 IndexedDB，标记 `pending`，不报错 |
+| 组件级错误 | `error` state + 用户可见的中文提示 |
+| 控制台日志 | 开发环境 `console.error`，生产环境静默 |
+
+### Loading State Patterns
+
+| 场景 | 表现 |
+|------|------|
+| AI 等待 | 打字机动画（掩盖等待时间） |
+| 数据加载 | 骨架屏或 spinner（首屏） |
+| 保存中 | 按钮变 disabled + loading 文案 |
+
+### Enforcement Guidelines
+
+**所有实现 MUST：**
+
+- 文件命名使用 kebab-case
+- JSON 字段使用 camelCase
+- 日期使用 ISO 8601 字符串
+- 错误通过 `error` state 展示给用户，不抛异常阻断
+- AI 调用失败返回 200 + `fromFallback: true`
+
+**Good Examples:**
+```ts
+// ✅ 正确的 store 更新
+addJournal: (journal) => set((state) => ({
+  journals: [...state.journals, journal]
+}))
+
+// ✅ 正确的错误处理
+return Response.json({ response: fallbackQuote, goldenQuote: fallbackQuote, moodLabel: "本地", fromFallback: true })
+```
+
+**Anti-Patterns:**
+```ts
+// ❌ 直接 mutation
+state.journals.push(journal)
+
+// ❌ 暴露 HTTP error 给前端
+throw new Error('API failed')
+```
+
+---
+
+## Project Structure & Boundaries
+
+### Complete Project Directory Structure
+
+```
+ai-smart-journal/
+├── README.md
+├── package.json
+├── next.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+├── .env.local              # 实际 API Key（不提交）
+├── .env.example            # 模板：DASHSCOPE_API_KEY=sk-xxx
+├── .gitignore
+├── public/
+│   └── favicon.ico
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx       # 根布局（全局 font、metadata）
+│   │   ├── page.tsx         # 首页（波形图 + 心情 + 输入）
+│   │   ├── globals.css      # Tailwind 指令 + 全局样式
+│   │   └── api/
+│   │       └── journal/
+│   │           └── route.ts # POST: AI 代理
+│   ├── components/
+│   │   ├── mood-selector.tsx     # 5 表情选择器
+│   │   ├── journal-input.tsx     # 日记输入框
+│   │   ├── emotion-chart.tsx     # 7 天波形图 (recharts)
+│   │   ├── golden-quote.tsx      # 金句卡片（翻转动画）
+│   │   ├── typewriter.tsx        # 打字机效果
+│   │   └── capsule-popup.tsx     # 时间胶囊弹窗（P1）
+│   ├── lib/
+│   │   ├── db.ts                 # IndexedDB 初始化 + CRUD
+│   │   ├── ai.ts                 # AI 调用 + 本地 fallback 金句库
+│   │   └── seed-data.ts          # 演示数据（3 条预设日记）
+│   ├── store/
+│   │   └── journal.ts            # Zustand store
+│   └── types/
+│       └── index.ts              # Journal, AIResponse, MoodLevel 等
+```
+
+### Architectural Boundaries
+
+**API Boundaries:**
+- 唯一端点：`POST /api/journal`
+- 纯代理模式，无认证，无业务逻辑
+- 请求体：`{ content, mood }` → 响应体：`{ response, goldenQuote, moodLabel, fromFallback }`
+
+**Component Boundaries:**
+- 所有组件通过 Zustand store 通信
+- 不直接 props 传递跨组件数据
+- 组件职责单一：每个组件只做一件事
+
+**Service Boundaries:**
+- `lib/db.ts`：唯一 IndexedDB 操作入口
+- `lib/ai.ts`：唯一 AI 调用入口（含 fallback）
+- `store/journal.ts`：唯一状态管理入口
+
+**Data Boundaries:**
+- IndexedDB 是唯一数据源（`journals` + `appMeta` 两表）
+- 无后端数据库，无缓存层
+- 数据流向：用户输入 → IndexedDB → store → 组件渲染
+
+### Requirements to Structure Mapping
+
+| 需求 | 实现位置 |
+|------|----------|
+| FR1-F2: 心情打卡 + 日记输入 | `components/mood-selector.tsx` + `components/journal-input.tsx` |
+| FR3-F4: 保存 + 历史查看 | `lib/db.ts` + `store/journal.ts` |
+| FR6-F7: AI 回应 + 金句 | `app/api/journal/route.ts` + `lib/ai.ts` |
+| FR10-F11: 情绪波形图 | `components/emotion-chart.tsx` |
+| FR13-F14: 时间胶囊 | `components/capsule-popup.tsx` |
+| FR15-F17: 数据管理 + 种子 | `lib/db.ts` + `lib/seed-data.ts` |
+| FR18: 金句分享 | `components/golden-quote.tsx` |
+
+### Integration Points
+
+**Internal Communication:**
+```
+用户 → MoodSelector → JournalInput → lib/db.ts (IndexedDB)
+                                          ↓
+                                  store/journal.ts
+                                          ↓
+                              app/api/journal/route.ts → 阿里云百炼
+                                          ↓
+                                  lib/ai.ts (fallback)
+                                          ↓
+                              EmotionChart (读取 store 渲染)
+```
+
+**External Integrations:**
+- 阿里云百炼 API（OpenAI 兼容接口）— 通过 `/api/journal` 代理
+
+**Data Flow:**
+- 写入：用户输入 → `lib/db.ts` → IndexedDB → `store/journal.ts` → 组件重渲染
+- 读取：页面加载 → `store/journal.ts` → `lib/db.ts` → IndexedDB → 组件渲染
+
+### File Organization Patterns
+
+**Configuration Files:** 根目录标准 Next.js 配置（`next.config.ts`, `tailwind.config.ts`, `tsconfig.json`）
+**Source Organization:** `src/` 下按职责分组（`app/`, `components/`, `lib/`, `store/`, `types/`）
+**Test Organization:** 本项目不写单元测试，手动验证
+**Asset Organization:** `public/` 存放静态资源
+
+---
+
+## Architecture Validation Results
+
+### Coherence Validation ✅
+
+**Decision Compatibility:** 所有技术栈无冲突 — Next.js App Router + TypeScript + TailwindCSS + Zustand + idb + recharts，全部兼容
+
+**Pattern Consistency:** 命名规范统一（kebab-case 文件、camelCase JSON、PascalCase 组件），所有组件通过 Zustand store 通信
+
+**Structure Alignment:** 目录结构支持所有架构决策，`lib/` 为唯一服务入口，`store/` 为唯一状态入口
+
+### Requirements Coverage Validation ✅
+
+**Functional Requirements:**
+
+| FR 类别 | 架构支持 | 状态 |
+|---------|----------|------|
+| FR1-F5 日记记录 | `mood-selector.tsx` + `journal-input.tsx` + `db.ts` | ✅ |
+| FR6-F9 AI 互动 | `route.ts` + `ai.ts` + fallback | ✅ |
+| FR10-F12 情绪可视化 | `emotion-chart.tsx` | ✅ |
+| FR13-F14 时间胶囊 | `capsule-popup.tsx` | ✅ |
+| FR15-F17 数据管理 | `db.ts` + `seed-data.ts` | ✅ |
+| FR18 金句分享 | `golden-quote.tsx` | ✅ |
+
+**Non-Functional Requirements:**
+
+| NFR | 架构支持 | 状态 |
+|-----|----------|------|
+| NFR1-3 性能 | 首屏最小化、打字机掩盖等待 | ✅ |
+| NFR5-7 安全 | `.env.local` + Route Handler 代理 | ✅ |
+| NFR8-9 降级 | Fallback 金句 + IndexedDB pending | ✅ |
+
+### Implementation Readiness Validation ✅
+
+- ✅ 所有关键决策已记录
+- ✅ 命名规范完整且一致
+- ✅ Good/Bad 代码示例已提供
+- ✅ 数据流清晰定义
+
+### Gap Analysis Results
+
+| 级别 | 项目 | 说明 |
+|------|------|------|
+| 重要 | AI Prompt 未详细定义 | `lib/ai.ts` 中的 system prompt 需要在实现时精确定义 |
+| 可选 | 无测试策略 | 本项目手动验证 |
+| 可选 | 无 CI/CD | 本地开发，不需要 |
+
+### Architecture Completeness Checklist
+
+- [x] 项目上下文分析
+- [x] Starter 模板评估
+- [x] 核心架构决策（数据、安全、API、前端、基础设施）
+- [x] 实现模式与一致性规则
+- [x] 完整项目目录结构
+- [x] 需求到结构映射
+- [x] 数据流定义
+
+### Architecture Readiness Assessment
+
+**Overall Status:** READY FOR IMPLEMENTATION
+
+**Confidence Level:** 高
+
+**Key Strengths:**
+- 技术栈极简，决策明确
+- 数据流单向清晰
+- 所有 FR/NFR 都有架构支持
+- 实现模式已定义
+
+**Areas for Future Enhancement:**
+- AI Prompt 精细化（实现时定义）
+- P2 功能（语音输入、主题皮肤）的架构预留
+
+### Implementation Handoff
+
+**AI Agent Guidelines:**
+
+- 严格遵循架构文档中的所有决策
+- 使用实现模式保持一致性
+- 尊重项目结构和边界
+- 所有架构问题参考此文档
+
+**First Implementation Priority:**
+
+```bash
+npx create-next-app@latest ai-smart-journal \
+  --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"
+```
+
+然后按顺序实现：
+1. 创建类型定义 (`types/index.ts`)
+2. 创建 IndexedDB 数据层 (`lib/db.ts`)
+3. 创建 Zustand store (`store/journal.ts`)
+4. 实现心情选择器 + 日记输入组件
+5. 实现 `/api/journal` Route Handler + AI 调用
+6. 实现情绪波形图组件
+7. 实现金句卡片 + 打字机效果
+8. 添加种子数据 + Fallback 机制
+9. 集成测试 + 视觉打磨
