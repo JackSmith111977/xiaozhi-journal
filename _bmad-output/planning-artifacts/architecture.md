@@ -2,25 +2,22 @@
 stepsCompleted: ["step-01-init", "step-02-context", "step-03-starter", "step-04-decisions", "step-05-patterns", "step-06-structure", "step-07-validation", "step-08-complete"]
 workflowType: 'architecture'
 lastStep: 8
-status: 'pending-ux-review'
+status: 'complete'
 completedAt: '2026-04-11'
+uxReviewed: true
+uxReviewedAt: '2026-04-11'
 ---
 
-> **⚠️ 待 UX 审阅后修改** — 等 UX 文档完成后，根据 UX 需求调整架构（组件复杂度、动画、响应式等）
-inputDocuments: ["prd.md"]
-workflowType: 'architecture'
-project_name: 'AI Smart Journal'
-user_name: 'Kei'
-date: '2026-04-11'
----
+# Architecture Decision Document (UX Updated)
 
-# Architecture Decision Document
+> 本文档已根据 UX 设计规格（`ux-design-specification.md`）更新。
 
 _This document builds collaboratively through step-by-step discovery. Sections are appended as we work through each architectural decision together._
 
 ## 输入文档
 
 - PRD: `_bmad-output/planning-artifacts/prd.md` (~470 行)
+- UX Design: `_bmad-output/planning-artifacts/ux-design-specification.md` (~740 行)
 
 ---
 
@@ -53,11 +50,25 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 - Next.js App Router + TypeScript
 - Zustand (轻量状态管理)
-- TailwindCSS + 内联样式 (动画)
+- **TailwindCSS** + **shadcn/ui**（基础组件）+ **Aceternity UI**（动效组件）
+- **Framer Motion**（弹簧动画、页面过渡）
 - IndexedDB via `idb` 库
 - 阿里云百炼 API (OpenAI 兼容接口)
-- 桌面浏览器 Chrome/Edge 最新版
+- **字体**：Noto Serif SC（标题/金句）+ Noto Sans SC（正文）— Google Fonts
+- 桌面浏览器 Chrome/Edge 最新版，移动端适配（375px+）
 - 无需登录/注册/后端数据库
+
+**新增依赖（UX 审阅后添加）：**
+
+| 依赖 | 用途 | 来源 |
+|------|------|------|
+| `framer-motion` | 弹簧动画、页面淡入淡出 | UX 波形图/卡片/输入框动效 |
+| `shadcn/ui` | Button, Card, Textarea, Dialog, Skeleton | UX 基础组件 |
+| Aceternity UI | Text Generate Effect, 3D Card | 打字机、金句翻转 |
+| `@next/font/google` | Noto Serif SC + Noto Sans SC | UX 字体系统 |
+
+**移除依赖：**
+- ~~`recharts`~~ → 波形图改为**自绘 SVG + Framer Motion**（UX 要求有机生长动画，recharts 无法满足）
 
 ### Cross-Cutting Concerns Identified
 
@@ -114,7 +125,10 @@ npx create-next-app@latest ai-smart-journal \
 |------|------|
 | `zustand` | 状态管理 |
 | `idb` | IndexedDB 封装 |
-| `recharts` | 情绪波形图 |
+| `framer-motion` | 弹簧动画、页面过渡 |
+| `shadcn/ui` | 基础组件（Button, Card, Textarea, Dialog, Skeleton） |
+| `@next/font/google` | Noto Serif SC + Noto Sans SC |
+| Aceternity UI | 打字机效果、3D 卡片（复制源码到项目） |
 
 **Note:** 项目初始化是第一个实现任务。
 
@@ -178,35 +192,87 @@ npx create-next-app@latest ai-smart-journal \
 
 ### Frontend Architecture
 
-**目录结构：**
+**设计系统（来自 UX）：**
+
+| 层级 | 工具 | 用途 |
+|------|------|------|
+| 样式基础 | **TailwindCSS** | 设计 Token（色板、间距、圆角、字体） |
+| 基础组件 | **shadcn/ui** | Button, Card, Textarea, Dialog, Skeleton |
+| 动效组件 | **Aceternity UI** | Text Generate Effect（打字机）、3D Card（金句翻转） |
+| 动画库 | **Framer Motion** | 弹簧动画、页面淡入淡出、波形图生长 |
+
+**设计 Token（「暖日」色板）：**
+
+| Token | 色值 | 用途 |
+|-------|------|------|
+| `bg-primary` | `#FDF8F5` | 页面背景（极浅暖米白） |
+| `bg-secondary` | `#F5EDE4` | 卡片/区块背景 |
+| `primary` | `#E8C4A0` | 主色（柔棕） |
+| `accent` | `#D4856A` | 强调色（暖珊瑚，按钮、金句高亮） |
+| `text-primary` | `#3D3D3D` | 主文字（深暖灰，非纯黑） |
+| `text-secondary` | `#8A817C` | 次要文字（中暖灰） |
+| `error` | `#D4856A` | 暖珊瑚（替代红色，保持温度） |
+
+**圆角系统：** sm=8px, md=12px, lg=16px, xl=24px, full=9999px（偏大，传达友好温柔）
+
+**字体系统：**
+- 标题/金句：`Noto Serif SC` 700/600/400 italic
+- 正文：`Noto Sans SC` 400
+- 通过 `@next/font/google` 加载
+
+**目录结构（UX 更新后）：**
 
 ```
-src/
-├── app/
-│   ├── page.tsx              # 首页（波形图 + 心情 + 输入）
-│   ├── layout.tsx            # 根布局
-│   └── globals.css           # 全局样式
-├── api/
-│   └── journal/
-│       └── route.ts          # AI 代理
-├── lib/
-│   ├── db.ts                 # IndexedDB 初始化 + CRUD
-│   ├── ai.ts                 # 本地 fallback 金句库
-│   └── seed-data.ts          # 演示数据
-├── store/
-│   └── journal.ts            # Zustand store（单一 store）
-├── components/
-│   ├── mood-selector.tsx     # 5 表情选择器
-│   ├── journal-input.tsx     # 日记输入框
-│   ├── emotion-chart.tsx     # 7 天波形图
-│   ├── golden-quote.tsx      # 金句卡片（翻转动画）
-│   └── typewriter.tsx        # 打字机效果
-└── types/
-    └── index.ts              # 全局类型定义
+ai-smart-journal/
+├── README.md
+├── package.json
+├── next.config.ts
+├── tailwind.config.ts          # 扩展：暖日色板 + 圆角 + 阴影
+├── tsconfig.json
+├── .env.local
+├── .env.example                # DASHSCOPE_API_KEY=sk-xxx
+├── .gitignore
+├── components.json             # shadcn/ui 配置
+├── public/
+│   └── favicon.ico
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx          # 根布局 + Google Fonts 加载
+│   │   ├── page.tsx            # 首页（波形图 + 心情 + 输入 + AI 回应）
+│   │   ├── globals.css         # Tailwind 指令 + 自定义 CSS 变量
+│   │   └── api/
+│   │       └── journal/
+│   │           └── route.ts    # POST: AI 代理
+│   ├── components/
+│   │   ├── ui/                 # shadcn/ui 组件（源码级）
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   └── skeleton.tsx
+│   │   ├── mood-selector.tsx       # 5 表情选择器（定制 SVG）
+│   │   ├── journal-input.tsx       # 日记输入框（聊天气泡风格）
+│   │   ├── emotion-chart.tsx       # 7 天波形图（自绘 SVG + Framer Motion）
+│   │   ├── golden-quote.tsx        # 金句卡片（Aceternity 3D Card）
+│   │   ├── typewriter.tsx          # 打字机效果（Aceternity Text Generate）
+│   │   ├── xiaozhi-bubble.tsx      # 小知回应气泡
+│   │   ├── typing-indicator.tsx    # "小知正在想..." + 跳动圆点
+│   │   ├── empty-state.tsx         # 空状态引导
+│   │   └── capsule-popup.tsx       # 时间胶囊弹窗（shadcn Dialog）
+│   ├── lib/
+│   │   ├── db.ts                   # IndexedDB 初始化 + CRUD
+│   │   ├── ai.ts                   # AI 调用 + system prompt + 本地 fallback
+│   │   ├── seed-data.ts            # 演示数据（3 条预设日记）
+│   │   └── utils.ts                # 工具函数（cn() 等）
+│   ├── store/
+│   │   └── journal.ts              # Zustand store
+│   └── types/
+│       └── index.ts                # Journal, AIResponse, MoodLevel 等
 ```
 
 **状态管理：** 单一 Zustand store（状态少，不需要拆分）
-**图表库：** `recharts`（LineChart 满足 7 天波形需求）
+**波形图：** 自绘 SVG `<polyline>` + Framer Motion 弹性生长动画（非 recharts）
+**响应式策略：** 桌面优先，3 断点（sm:375px, md:768px, lg:1024px），Tailwind 默认断点
 
 ### Infrastructure & Deployment
 
@@ -283,9 +349,23 @@ src/
 
 | 场景 | 表现 |
 |------|------|
-| AI 等待 | 打字机动画（掩盖等待时间） |
-| 数据加载 | 骨架屏或 spinner（首屏） |
-| 保存中 | 按钮变 disabled + loading 文案 |
+| AI 等待 | 打字机动画 + "小知正在想..." + 3 个跳动圆点（Aceternity Text Generate） |
+| 数据加载 | 骨架屏浅米色 `#F5EDE4` 闪烁（shadcn Skeleton） |
+| 保存中 | 按钮变 disabled + 涟漪反馈 + loading 文案 |
+| 页面过渡 | 淡入淡出 0.3s（Framer Motion） |
+
+### Motion & Animation Patterns
+
+| 动效 | 实现 | 参数 |
+|------|------|------|
+| 表情点击回弹 | Framer Motion `spring` | scale(1.3) → 回弹 |
+| 输入框滑入 | Framer Motion `spring` | 从下方弹性滑入 |
+| 打字机揭示 | Aceternity Text Generate | ~50ms/字 |
+| 金句翻转 | Aceternity 3D Card + CSS 3D transform | 0.6s |
+| 波形生长 | Framer Motion `animate` | 0.8s 入场，新数据点弹性弹跳 |
+| 弹窗出现 | Framer Motion `scale 0.9 → 1.0` | 0.3s cubic-bezier |
+| 空状态浮动 | CSS `@keyframes` | 2s 循环微浮动 |
+| 尊重无障碍 | `prefers-reduced-motion` | 关闭动画时直接显示 |
 
 ### Enforcement Guidelines
 
@@ -328,37 +408,60 @@ ai-smart-journal/
 ├── README.md
 ├── package.json
 ├── next.config.ts
-├── tailwind.config.ts
+├── tailwind.config.ts          # 暖日色板 + 圆角 + 阴影 Token
 ├── tsconfig.json
-├── .env.local              # 实际 API Key（不提交）
-├── .env.example            # 模板：DASHSCOPE_API_KEY=sk-xxx
+├── .env.local                  # 实际 API Key（不提交）
+├── .env.example                # 模板：DASHSCOPE_API_KEY=sk-xxx
 ├── .gitignore
+├── components.json             # shadcn/ui 配置
 ├── public/
 │   └── favicon.ico
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx       # 根布局（全局 font、metadata）
-│   │   ├── page.tsx         # 首页（波形图 + 心情 + 输入）
-│   │   ├── globals.css      # Tailwind 指令 + 全局样式
+│   │   ├── layout.tsx          # 根布局 + Google Fonts (Noto Serif/Sans SC)
+│   │   ├── page.tsx            # 首页（波形图 + 心情 + 输入 + AI 回应）
+│   │   ├── globals.css         # Tailwind + CSS 变量（色板/圆角/阴影）
 │   │   └── api/
 │   │       └── journal/
-│   │           └── route.ts # POST: AI 代理
+│   │           └── route.ts    # POST: AI 代理
 │   ├── components/
-│   │   ├── mood-selector.tsx     # 5 表情选择器
-│   │   ├── journal-input.tsx     # 日记输入框
-│   │   ├── emotion-chart.tsx     # 7 天波形图 (recharts)
-│   │   ├── golden-quote.tsx      # 金句卡片（翻转动画）
-│   │   ├── typewriter.tsx        # 打字机效果
-│   │   └── capsule-popup.tsx     # 时间胶囊弹窗（P1）
+│   │   ├── ui/                 # shadcn/ui 源码级组件
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   └── skeleton.tsx
+│   │   ├── mood-selector.tsx       # 5 表情（定制 SVG，非标准 emoji）
+│   │   ├── journal-input.tsx       # 输入框（聊天气泡风格，底部 2px 线）
+│   │   ├── emotion-chart.tsx       # 波形图（自绘 SVG + Framer Motion）
+│   │   ├── golden-quote.tsx        # 金句卡片（Aceternity 3D Card + 翻转）
+│   │   ├── typewriter.tsx          # 打字机（Aceternity Text Generate）
+│   │   ├── xiaozhi-bubble.tsx      # 小知回应气泡（左侧对齐，带气泡尾）
+│   │   ├── typing-indicator.tsx    # "小知正在想..." + 3 个跳动圆点
+│   │   ├── empty-state.tsx         # 空状态引导（插画 + 温柔文案）
+│   │   └── capsule-popup.tsx       # 时间胶囊弹窗（shadcn Dialog）
 │   ├── lib/
 │   │   ├── db.ts                 # IndexedDB 初始化 + CRUD
-│   │   ├── ai.ts                 # AI 调用 + 本地 fallback 金句库
-│   │   └── seed-data.ts          # 演示数据（3 条预设日记）
+│   │   ├── ai.ts                 # AI 调用 + system prompt + fallback 金句库
+│   │   ├── seed-data.ts          # 演示数据（3 条预设日记）
+│   │   └── utils.ts              # cn() 等工具函数
 │   ├── store/
 │   │   └── journal.ts            # Zustand store
 │   └── types/
 │       └── index.ts              # Journal, AIResponse, MoodLevel 等
 ```
+
+**UX 审阅后变更：**
+
+| 变更 | 之前 | 之后 | 原因 |
+|------|------|------|------|
+| 波形图 | recharts LineChart | 自绘 SVG + Framer Motion | UX 要求有机生长动画，recharts 不灵活 |
+| 基础组件 | 无 | shadcn/ui | UX 要求 Button/Card/Textarea/Dialog/Skeleton |
+| 动效 | 内联 CSS | Framer Motion + Aceternity UI | UX 要求弹簧动画、3D 翻转、打字机 |
+| 字体 | 系统默认 | Noto Serif SC + Noto Sans SC | UX 杂志风格，文学感标题 |
+| 新增组件 | 5 个 | 9 个 | xiaozhi-bubble, typing-indicator, empty-state, ui/* |
+| 配置文件 | 无 | components.json | shadcn/ui 需要 |
+| 工具函数 | 无 | lib/utils.ts | cn() 合并 Tailwind class |
 
 ### Architectural Boundaries
 
@@ -429,11 +532,11 @@ ai-smart-journal/
 
 ### Coherence Validation ✅
 
-**Decision Compatibility:** 所有技术栈无冲突 — Next.js App Router + TypeScript + TailwindCSS + Zustand + idb + recharts，全部兼容
+**Decision Compatibility:** 所有技术栈无冲突 — Next.js App Router + TypeScript + TailwindCSS + Zustand + idb + Framer Motion + shadcn/ui + Aceternity UI，全部兼容
 
-**Pattern Consistency:** 命名规范统一（kebab-case 文件、camelCase JSON、PascalCase 组件），所有组件通过 Zustand store 通信
+**Pattern Consistency:** 命名规范统一（kebab-case 文件、camelCase JSON、PascalCase 组件），所有组件通过 Zustand store 通信，动效统一使用 Framer Motion
 
-**Structure Alignment:** 目录结构支持所有架构决策，`lib/` 为唯一服务入口，`store/` 为唯一状态入口
+**Structure Alignment:** 目录结构支持所有架构决策和 UX 组件需求，`lib/` 为唯一服务入口，`store/` 为唯一状态入口，`components/ui/` 为 shadcn 基础组件
 
 ### Requirements Coverage Validation ✅
 
@@ -443,7 +546,7 @@ ai-smart-journal/
 |---------|----------|------|
 | FR1-F5 日记记录 | `mood-selector.tsx` + `journal-input.tsx` + `db.ts` | ✅ |
 | FR6-F9 AI 互动 | `route.ts` + `ai.ts` + fallback | ✅ |
-| FR10-F12 情绪可视化 | `emotion-chart.tsx` | ✅ |
+| FR10-F12 情绪可视化 | `emotion-chart.tsx`（自绘 SVG + Framer Motion） | ✅ |
 | FR13-F14 时间胶囊 | `capsule-popup.tsx` | ✅ |
 | FR15-F17 数据管理 | `db.ts` + `seed-data.ts` | ✅ |
 | FR18 金句分享 | `golden-quote.tsx` | ✅ |
@@ -513,13 +616,24 @@ npx create-next-app@latest ai-smart-journal \
   --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"
 ```
 
+安装额外依赖：
+```bash
+npm i zustand idb framer-motion
+npx shadcn@latest init
+npx shadcn@latest add button card textarea dialog skeleton
+```
+
 然后按顺序实现：
-1. 创建类型定义 (`types/index.ts`)
-2. 创建 IndexedDB 数据层 (`lib/db.ts`)
-3. 创建 Zustand store (`store/journal.ts`)
-4. 实现心情选择器 + 日记输入组件
-5. 实现 `/api/journal` Route Handler + AI 调用
-6. 实现情绪波形图组件
-7. 实现金句卡片 + 打字机效果
-8. 添加种子数据 + Fallback 机制
-9. 集成测试 + 视觉打磨
+1. 配置 Tailwind 暖日色板 + 圆角 + 阴影 Token
+2. 加载 Google Fonts（Noto Serif SC + Noto Sans SC）
+3. 创建类型定义 (`types/index.ts`)
+4. 创建 IndexedDB 数据层 (`lib/db.ts`)
+5. 创建 Zustand store (`store/journal.ts`)
+6. 安装并配置 shadcn/ui 组件
+7. 实现心情选择器 + 日记输入组件
+8. 实现 `/api/journal` Route Handler + AI 调用 + system prompt
+9. 实现情绪波形图组件（自绘 SVG + Framer Motion）
+10. 实现金句卡片（Aceternity 3D Card）+ 打字机效果
+11. 实现小知气泡 + 打字机指示器 + 空状态
+12. 添加种子数据 + Fallback 机制
+13. 响应式适配 + 视觉打磨

@@ -1,0 +1,35 @@
+# Sprint Status - AI Smart Journal
+# Generated: 2026-04-11
+# DO NOT DELETE the STATUS DEFINITIONS comment block below
+
+# STATUS DEFINITIONS:
+#   ready-for-dev   = Story is ready for development
+#   in-progress     = Story is being developed
+#   review          = Story completed, awaiting review
+#   done            = Story reviewed and approved
+
+development_status:
+  # Epic 1: 项目基础搭建
+  1-1-nextjs-init-design-system: review
+  1-2-indexeddb-zustand-store: review
+  1-3-seed-data-empty-state: review
+  # Epic 2: 3 秒心情打卡
+  2-1-mood-selector: review
+  2-2-journal-input-save: review
+  # Epic 3: AI 温暖回应
+  3-1-ai-api-route-handler: review
+  3-2-typewriter-quote-card: review
+  3-3-offline-async-callback: review
+  # Epic 4: 情绪波形图
+  4-1-svg-waveform-chart: review
+  4-2-hover-tooltip-no-data: review
+  # Epic 5: 日记历史与详情
+  5-1-journal-history-list: review
+  5-2-journal-detail: review
+  # Epic 6: 时间胶囊（P1）
+  6-1-time-capsule-match: review
+  6-2-time-capsule-view-history: review
+  # Epic 7: 金句分享（P2）
+  7-1-quote-share-image: review
+
+last_updated: "2026-04-11"
