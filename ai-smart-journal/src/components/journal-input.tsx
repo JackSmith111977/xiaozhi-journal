@@ -1,16 +1,29 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useJournalStore } from '@/store/journal';
 import type { Journal } from '@/types';
 
+const DRAFT_KEY = 'journal-draft';
+
 export function JournalInput() {
-  const { selectedMood, journals, addJournal, setAIWaiting, setSelectedMood, updateAIResponse } = useJournalStore();
+  const { selectedMood, addJournal, setAIWaiting, setSelectedMood, updateAIResponse } = useJournalStore();
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showOfflineMsg, setShowOfflineMsg] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    }
+  }, [content]);
 
   const handleSave = useCallback(async () => {
     if (!content.trim() || !selectedMood) return;
@@ -27,11 +40,15 @@ export function JournalInput() {
       goldenQuote: null,
       moodLabel: null,
       timestamp: new Date().toISOString(),
-      status: isOnline ? 'pending' : 'pending',
+      status: 'pending',
       shareCount: 0,
     };
 
     await addJournal(journal);
+    // Clear draft from IndexedDB
+    const { setMeta } = await import('@/lib/db');
+    await setMeta(DRAFT_KEY, '');
+
     setSaving(false);
     setShowSuccess(true);
     setShowOfflineMsg(!isOnline);
@@ -46,8 +63,14 @@ export function JournalInput() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: journal.id, content: journal.content, mood: journal.mood }),
         });
+
+        if (!res.ok) {
+          setAIWaiting(false);
+          return;
+        }
+
         const data = await res.json();
-        if (data) {
+        if (data?.response) {
           updateAIResponse(journal.id, data);
         } else {
           setAIWaiting(false);
@@ -63,24 +86,41 @@ export function JournalInput() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
       handleSave();
     }
   };
 
-  // Auto-save draft
+  // Auto-save draft to IndexedDB (debounce 300ms)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (content) {
-        localStorage.setItem('journal-draft', content);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        const { setMeta } = await import('@/lib/db');
+        await setMeta(DRAFT_KEY, content);
+      } catch {
+        // Draft save best-effort
       }
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, [content]);
 
-  // Restore draft
+  // Restore draft from IndexedDB
   useEffect(() => {
-    const draft = localStorage.getItem('journal-draft');
-    if (draft) setContent(draft);
+    const restore = async () => {
+      try {
+        const { getMeta } = await import('@/lib/db');
+        const draft = await getMeta(DRAFT_KEY);
+        if (draft && typeof draft === 'string') {
+          setContent(draft);
+        }
+      } catch {
+        // Draft restore best-effort
+      }
+    };
+    restore();
   }, []);
 
   if (!selectedMood) return null;
@@ -93,13 +133,14 @@ export function JournalInput() {
       className="mb-6"
     >
       <textarea
+        ref={textareaRef}
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="随便写点什么吧，哪怕只有一句话"
         className="w-full bg-transparent border-0 border-b-2 border-[#E8E0D8] rounded-b-md py-3 px-1 resize-none
           focus:outline-none focus:border-[#D4856A] placeholder:text-[#B5ADA9]
-          text-base leading-relaxed"
+          text-base leading-relaxed overflow-y-auto"
         style={{ maxHeight: '200px', fontFamily: 'var(--font-noto-sans)' }}
         rows={2}
       />
@@ -121,7 +162,7 @@ export function JournalInput() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="mt-3 text-center text-[#A8C5A0] text-sm"
+            className="mt-3 text-center text-sm bg-[#A8C5A0] rounded-lg py-2 px-4 text-white"
           >
             记下了 ✨
           </motion.div>

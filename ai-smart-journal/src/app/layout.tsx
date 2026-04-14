@@ -4,14 +4,14 @@ import "./globals.css";
 
 const notoSerif = Noto_Serif_SC({
   variable: "--font-noto-serif",
-  subsets: ["latin", "cyrillic"],
+  subsets: ["latin"],
   weight: ["400", "600", "700"],
 });
 
 const notoSans = Noto_Sans_SC({
   variable: "--font-noto-sans",
-  subsets: ["latin", "cyrillic"],
-  weight: ["400"],
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {

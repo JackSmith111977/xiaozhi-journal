@@ -5,8 +5,10 @@ const DB_NAME = 'ai-smart-journal';
 const DB_VERSION = 1;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
+let dbInstance: IDBPDatabase | null = null;
 
 function getDB() {
+  if (dbInstance) return Promise.resolve(dbInstance);
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
       upgrade(db) {
@@ -19,6 +21,26 @@ function getDB() {
           db.createObjectStore('appMeta', { keyPath: 'key' });
         }
       },
+      blocked(currentVersion, blockedVersion) {
+        console.warn(`[DB] Blocked upgrading from v${currentVersion} to v${blockedVersion}`);
+      },
+      blocking(currentVersion, blockedVersion) {
+        if (dbInstance) {
+          dbInstance.close();
+          dbInstance = null;
+          dbPromise = null;
+        }
+      },
+      terminated() {
+        dbInstance = null;
+        dbPromise = null;
+      },
+    }).then((db) => {
+      dbInstance = db;
+      return db;
+    }).catch((err) => {
+      dbPromise = null;
+      throw err;
     });
   }
   return dbPromise;

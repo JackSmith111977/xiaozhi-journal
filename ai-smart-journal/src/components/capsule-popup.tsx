@@ -1,16 +1,31 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Journal } from '@/types';
 
 interface CapsulePopupProps {
   journal: Journal;
   onClose: () => void;
-  onView: () => void;
 }
 
-export function CapsulePopup({ journal, onClose, onView }: CapsulePopupProps) {
+export function CapsulePopup({ journal, onClose }: CapsulePopupProps) {
+  const router = useRouter();
+
+  const handleView = useCallback(() => {
+    onClose();
+    router.push(`/history/${journal.id}`);
+  }, [onClose, router, journal.id]);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   return (
     <AnimatePresence>
       <motion.div
@@ -50,13 +65,13 @@ export function CapsulePopup({ journal, onClose, onView }: CapsulePopupProps) {
           <div className="flex gap-3 justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-[#D4856A] hover:bg-[#F5EDE4] rounded-lg transition-colors"
+              className="px-4 py-2 text-[#D4856A] hover:bg-[#F5EDE4] rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2"
             >
               稍后再说
             </button>
             <button
-              onClick={onView}
-              className="px-4 py-2 border border-[#D4856A] text-[#D4856A] rounded-lg hover:bg-[#F5EDE4] transition-colors"
+              onClick={handleView}
+              className="px-4 py-2 border border-[#D4856A] text-[#D4856A] rounded-lg hover:bg-[#F5EDE4] transition-colors focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2"
             >
               去看看
             </button>

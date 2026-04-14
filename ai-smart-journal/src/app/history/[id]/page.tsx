@@ -14,8 +14,14 @@ export default function JournalDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const id = params.id;
+    const journalId = Array.isArray(id) ? id[0] : id;
+    if (!journalId) {
+      setLoading(false);
+      return;
+    }
     const load = async () => {
-      const j = await getJournalById(params.id as string);
+      const j = await getJournalById(journalId);
       setJournal(j || null);
       setLoading(false);
     };
@@ -51,7 +57,7 @@ export default function JournalDetail() {
       <div className="max-w-[680px] mx-auto px-6 py-12">
         <button
           onClick={() => router.back()}
-          className="text-[#D4856A] text-sm mb-6 hover:underline"
+          className="text-[#D4856A] text-sm mb-6 hover:underline focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2 rounded"
         >
           ← 返回列表
         </button>
@@ -80,7 +86,7 @@ export default function JournalDetail() {
         {journal.aiResponse && <XiaozhiBubble text={journal.aiResponse} />}
 
         {/* Golden Quote */}
-        {journal.goldenQuote && <GoldenQuote quote={journal.goldenQuote} date={journal.timestamp} />}
+        {journal.goldenQuote && <GoldenQuote quote={journal.goldenQuote} date={journal.timestamp} journalId={journal.id} />}
       </div>
     </main>
   );

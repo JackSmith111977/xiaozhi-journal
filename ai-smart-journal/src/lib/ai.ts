@@ -20,6 +20,38 @@ const SYSTEM_PROMPT = `你是一个温暖、有个性的朋友，名叫"小知"�
 请以严格的 JSON 格式返回：
 {"response": "共情回应（2-3句）", "goldenQuote": "今日金句", "moodLabel": "情绪标签"}`;
 
+function buildRequestBody(content: string) {
+  return JSON.stringify({
+    model: 'qwen-turbo',
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content },
+    ],
+    temperature: 0.8,
+    max_tokens: 300,
+  });
+}
+
+function parseAIResponse(text: string, fallbackText?: string): AIResponse | null {
+  if (!text) return null;
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (typeof parsed.response !== 'string' || typeof parsed.goldenQuote !== 'string' || typeof parsed.moodLabel !== 'string') {
+      return null;
+    }
+    return {
+      response: parsed.response || fallbackText || text,
+      goldenQuote: parsed.goldenQuote || FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)],
+      moodLabel: parsed.moodLabel || '复杂',
+      fromFallback: false,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function callAI(content: string, mood: MoodLevel): Promise<AIResponse> {
   const apiKey = process.env.DASHSCOPE_API_KEY;
   if (!apiKey) {
@@ -30,83 +62,51 @@ export async function callAI(content: string, mood: MoodLevel): Promise<AIRespon
   const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
+    const body = buildRequestBody(content);
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: 'qwen-turbo',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: content },
-        ],
-        temperature: 0.8,
-        max_tokens: 300,
-      }),
+      body,
       signal: controller.signal,
     });
 
     clearTimeout(timeout);
 
-    const data = await res.json();
-    const content_text = data.choices?.[0]?.message?.content;
-
-    if (content_text) {
-      try {
-        // Try to parse JSON from the response
-        const jsonMatch = content_text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          return {
-            response: parsed.response || content_text,
-            goldenQuote: parsed.goldenQuote || FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)],
-            moodLabel: parsed.moodLabel || '复杂',
-            fromFallback: false,
-          };
-        }
-      } catch {
-        // JSON parse failed, retry once
-      }
+    if (!res.ok) {
+      throw new Error(`API request failed: ${res.status}`);
     }
 
-    // Retry once
+    const data = await res.json();
+    const contentText = data.choices?.[0]?.message?.content;
+    const parsed = parseAIResponse(contentText);
+    if (parsed) return parsed;
+
+    // Retry once with a new timeout
+    const retryController = new AbortController();
+    const retryTimeout = setTimeout(() => retryController.abort(), 15000);
     const retryRes = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: 'qwen-turbo',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: content },
-        ],
-        temperature: 0.8,
-        max_tokens: 300,
-      }),
+      body,
+      signal: retryController.signal,
     });
+
+    clearTimeout(retryTimeout);
+
+    if (!retryRes.ok) {
+      throw new Error(`Retry failed: ${retryRes.status}`);
+    }
 
     const retryData = await retryRes.json();
     const retryContent = retryData.choices?.[0]?.message?.content;
-    if (retryContent) {
-      try {
-        const jsonMatch = retryContent.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          return {
-            response: parsed.response || retryContent,
-            goldenQuote: parsed.goldenQuote || FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)],
-            moodLabel: parsed.moodLabel || '复杂',
-            fromFallback: false,
-          };
-        }
-      } catch {
-        // fallback
-      }
-    }
+    const retryParsed = parseAIResponse(retryContent);
+    if (retryParsed) return retryParsed;
 
     return getFallbackResponse(mood);
   } catch {

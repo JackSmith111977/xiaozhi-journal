@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getJournals, addJournal as dbAdd, updateJournal as dbUpdate } from '@/lib/db';
+import { getJournals, getJournalById, addJournal as dbAdd, updateJournal as dbUpdate } from '@/lib/db';
 import type { Journal, AIResponse } from '@/types';
 
 interface JournalState {
@@ -44,11 +44,13 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
   },
 
   addJournal: async (journal: Journal) => {
+    set({ error: null });
     try {
       await dbAdd(journal);
       set((state) => ({
         journals: [journal, ...state.journals],
         draftContent: '',
+        selectedMood: null,
       }));
     } catch (err) {
       set({ error: '保存失败' });
@@ -56,6 +58,7 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
   },
 
   updateJournal: async (journal: Journal) => {
+    set({ error: null });
     try {
       await dbUpdate(journal);
       set((state) => ({
@@ -67,10 +70,9 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
   },
 
   updateAIResponse: async (id: string, response: AIResponse) => {
-    set({ aiWaiting: false });
+    set({ aiWaiting: false, error: null });
     try {
-      const journals = await getJournals();
-      const journal = journals.find((j) => j.id === id);
+      const journal = await getJournalById(id);
       if (journal) {
         const updated = {
           ...journal,
@@ -82,6 +84,7 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
         await dbUpdate(updated);
         set((state) => ({
           journals: state.journals.map((j) => (j.id === id ? updated : j)),
+          latestAIResponse: response,
         }));
       }
     } catch (err) {

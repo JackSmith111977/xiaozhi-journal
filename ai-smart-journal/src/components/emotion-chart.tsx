@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Journal } from '@/types';
 import { MOOD_MAP } from '@/types';
 
@@ -12,6 +12,8 @@ interface EmotionChartProps {
 const COLORS = ['#A8C5A0', '#B8B87A', '#C8AB94', '#D89E88', '#D4856A'];
 
 export function EmotionChart({ journals }: EmotionChartProps) {
+  const [hovered, setHovered] = useState<number | null>(null);
+
   const last7Days = useMemo(() => {
     const now = new Date();
     const days: { date: string; journals: Journal[] }[] = [];
@@ -32,8 +34,8 @@ export function EmotionChart({ journals }: EmotionChartProps) {
   if (!hasData) {
     return (
       <div className="mb-6 py-6">
-        <svg viewBox="0 0 640 80" className="w-full max-w-[640px] mx-auto" style={{ height: '80px' }}>
-          <line x1="0" y1="40" x2="640" y2="40" stroke="#E8E0D8" strokeWidth="1" strokeDasharray="4 4" />
+        <svg viewBox="0 0 640 120" className="w-full max-w-[640px] mx-auto" style={{ height: '120px' }}>
+          <line x1="0" y1="60" x2="640" y2="60" stroke="#E8E0D8" strokeWidth="1" strokeDasharray="4 4" />
         </svg>
         <p className="text-center text-[#8A817C] text-sm mt-2">
           你的第一条日记从这里开始 ✨
@@ -78,30 +80,68 @@ export function EmotionChart({ journals }: EmotionChartProps) {
             <stop offset="100%" stopColor="#D4856A" />
           </linearGradient>
         </defs>
-        <polyline
+        <motion.polyline
           points={polylinePoints}
           fill="none"
           stroke="url(#waveGradient)"
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
         />
-        {points.map((point, i) => (
-          <g key={i}>
-            <motion.circle
-              cx={point.x}
-              cy={point.y}
-              r="4"
-              fill={COLORS[point.mood - 1] || '#8A817C'}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', delay: i * 0.1 }}
-            />
-            <text x={point.x} y={point.y - 10} textAnchor="middle" fontSize="12">
-              {MOOD_MAP[point.mood as 1 | 2 | 3 | 4 | 5]?.emoji}
-            </text>
-          </g>
-        ))}
+        {points.map((point, i) => {
+          const day = last7Days.find((d) => d.date === point.date);
+          const journal = day?.journals[0];
+          const isHovered = hovered === i;
+          return (
+            <g key={i} onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)} className="cursor-pointer">
+              {/* Invisible hit area for easier hover */}
+              <circle cx={point.x} cy={point.y} r="16" fill="transparent" />
+              <motion.circle
+                cx={point.x}
+                cy={point.y}
+                r={isHovered ? 6 : 4}
+                fill={COLORS[point.mood - 1] || '#8A817C'}
+                initial={{ scale: 0 }}
+                animate={{ scale: isHovered ? 1.5 : 1 }}
+                transition={{ type: 'spring', delay: i * 0.1 }}
+              />
+              <text x={point.x} y={point.y - 10} textAnchor="middle" fontSize="12">
+                {MOOD_MAP[point.mood as 1 | 2 | 3 | 4 | 5]?.emoji}
+              </text>
+              <AnimatePresence>
+                {isHovered && journal && (
+                  <motion.g
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <rect
+                      x={point.x - 70}
+                      y={point.y - 55}
+                      width="140"
+                      height="42"
+                      rx="6"
+                      fill="#F5EDE4"
+                      stroke="#E8E0D8"
+                      strokeWidth="1"
+                    />
+                    <text x={point.x} y={point.y - 38} textAnchor="middle" fontSize="11" fill="#8A817C">
+                      {new Date(point.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}{' '}
+                      {MOOD_MAP[point.mood as 1 | 2 | 3 | 4 | 5]?.label}
+                    </text>
+                    <text x={point.x} y={point.y - 22} textAnchor="middle" fontSize="10" fill="#3D3D3D">
+                      {journal.content.length > 20 ? journal.content.slice(0, 20) + '...' : journal.content}
+                    </text>
+                  </motion.g>
+                )}
+              </AnimatePresence>
+            </g>
+          );
+        })}
       </svg>
     </motion.div>
   );
