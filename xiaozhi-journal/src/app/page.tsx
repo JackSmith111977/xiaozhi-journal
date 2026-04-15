@@ -164,7 +164,7 @@ export default function Home() {
             className="text-3xl text-[#3D3D3D] leading-tight"
             style={{ fontFamily: 'var(--font-noto-serif)' }}
           >
-            AI Smart Journal
+            Xiaozhi Journal
           </h1>
         </div>
 

@@ -15,7 +15,7 @@ const notoSans = Noto_Sans_SC({
 });
 
 export const metadata: Metadata = {
-  title: "AI Smart Journal",
+  title: "Xiaozhi Journal",
   description: "被理解的日记",
 };
 

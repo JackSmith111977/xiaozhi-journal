@@ -1,7 +1,7 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import type { Journal, AppMeta } from '@/types';
 
-const DB_NAME = 'ai-smart-journal';
+const DB_NAME = 'xiaozhi-journal';
 const DB_VERSION = 1;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
