@@ -11,37 +11,28 @@ import { GoldenQuote } from '@/components/golden-quote';
 import { EmptyState } from '@/components/empty-state';
 import { CapsulePopup } from '@/components/capsule-popup';
 import { getMeta, setMeta, getPendingJournals, addJournal as dbAdd, updateJournal as dbUpdate, getJournals } from '@/lib/db';
+import { checkTimeCapsule, recordShown } from '@/lib/time-capsule';
 import { SEED_JOURNALS } from '@/lib/seed-data';
 import type { Journal, AIResponse } from '@/types';
-
-// Time capsule: check for historical same-day or similar mood journals
-function checkTimeCapsule(newJournal: Journal, allJournals: Journal[]): Journal | null {
-  const newDate = new Date(newJournal.timestamp);
-  const newMood = newJournal.mood;
-  const candidates = allJournals.filter((j) => {
-    if (j.id === newJournal.id) return false;
-    const jDate = new Date(j.timestamp);
-    const sameDay =
-      Math.abs(jDate.getDate() - newDate.getDate()) <= 3 &&
-      jDate.getMonth() === newDate.getMonth();
-    const similarMood = Math.abs(j.mood - newMood) <= 1;
-    return sameDay || similarMood;
-  });
-  if (candidates.length === 0) return null;
-  if (Math.random() > 0.3) return null;
-  return candidates[Math.floor(Math.random() * candidates.length)];
-}
 
 export default function Home() {
   const { journals, loading, fetchJournals, aiWaiting, selectedMood } = useJournalStore();
   const [initialized, setInitialized] = useState(false);
   const [capsuleJournal, setCapsuleJournal] = useState<Journal | null>(null);
+  const [capsuleTitle, setCapsuleTitle] = useState<string>('');
   const [showCapsule, setShowCapsule] = useState(false);
   const seedingRef = useRef(false);
   const prevCountRef = useRef(0);
 
   // Time capsule: trigger after a new journal is added
   useEffect(() => {
+    let cancelled = false;
+
+    // Reset state on each run
+    setCapsuleJournal(null);
+    setCapsuleTitle('');
+    setShowCapsule(false);
+
     if (!initialized || journals.length <= prevCountRef.current) {
       prevCountRef.current = journals.length;
       return;
@@ -49,13 +40,19 @@ export default function Home() {
     // A new journal was added — check for time capsule match
     const latest = journals[0];
     if (latest) {
-      const match = checkTimeCapsule(latest, journals);
-      if (match) {
-        setCapsuleJournal(match);
-        setShowCapsule(true);
-      }
+      checkTimeCapsule(latest, journals).then((result) => {
+        if (cancelled) return;
+        if (result) {
+          setCapsuleJournal(result.journal);
+          setCapsuleTitle(result.title);
+          setShowCapsule(true);
+          recordShown(result.journal.id);
+        }
+      });
     }
     prevCountRef.current = journals.length;
+
+    return () => { cancelled = true; };
   }, [journals, initialized]);
 
   const seedData = useCallback(async () => {
@@ -194,6 +191,7 @@ export default function Home() {
         {showCapsule && capsuleJournal && (
           <CapsulePopup
             journal={capsuleJournal}
+            title={capsuleTitle}
             onClose={() => setShowCapsule(false)}
           />
         )}

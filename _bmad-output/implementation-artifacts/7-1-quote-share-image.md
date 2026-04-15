@@ -13,7 +13,7 @@ so that 我可以截图发到朋友圈或发给朋友。
 1. **Given** 用户看到金句卡片
    **When** 点击金句卡片右上角的分享图标按钮
    **Then** 将金句渲染为一张图片（使用 `html-to-image` 或 Canvas）
-   **And** 图片包含：金句文字、"AI Smart Journal" 水印、日期
+   **And** 图片包含：金句文字、"Xiaozhi Journal" 水印、日期
    **And** 图片样式与金句卡片一致（杂志引用风格）
    **And** 图片下载或复制到剪贴板
 
@@ -28,7 +28,7 @@ so that 我可以截图发到朋友圈或发给朋友。
   - [x] 安装 `html-to-image` 依赖
 - [x] Task 2: 实现图片生成 (AC: #1)
   - [x] 使用 html-to-image 将金句卡片渲染为图片
-  - [x] 图片包含：金句文字、"AI Smart Journal" 水印、日期
+  - [x] 图片包含：金句文字、"Xiaozhi Journal" 水印、日期
   - [x] 实现下载或复制到剪贴板功能
 - [x] Task 3: 实现分享计数 (AC: #2)
   - [x] 分享成功后更新 IndexedDB 中该日记的 shareCount +1
@@ -42,7 +42,7 @@ so that 我可以截图发到朋友圈或发给朋友。
 
 ### 图片规格
 - 样式：与金句卡片一致（杂志引用风格）
-- 包含元素：金句文字、"AI Smart Journal" 水印、日期
+- 包含元素：金句文字、"Xiaozhi Journal" 水印、日期
 
 ### References
 - [Source: epics.md#Story 7.1]

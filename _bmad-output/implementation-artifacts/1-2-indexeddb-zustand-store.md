@@ -11,7 +11,7 @@ so that 日记的读写有可靠的本地数据源。
 ## Acceptance Criteria
 
 1. **Given** 项目已初始化
-   **When** 在 `lib/db.ts` 中创建 IndexedDB 数据库 `ai-smart-journal`
+   **When** 在 `lib/db.ts` 中创建 IndexedDB 数据库 `xiaozhi-journal`
    **Then** 包含 `journals` store（字段：id, content, mood, moodEmoji, aiResponse, goldenQuote, moodLabel, timestamp, status, shareCount）
    **And** 包含 `appMeta` store（字段：key, value）
    **And** 提供 CRUD 函数：`addJournal()`, `getJournals()`, `getJournalById()`, `updateJournal()`, `setMeta()`, `getMeta()`

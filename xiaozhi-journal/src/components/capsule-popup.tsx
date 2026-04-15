@@ -1,30 +1,42 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { recordClose } from '@/lib/time-capsule';
 import type { Journal } from '@/types';
 
 interface CapsulePopupProps {
   journal: Journal;
+  title: string;
   onClose: () => void;
 }
 
-export function CapsulePopup({ journal, onClose }: CapsulePopupProps) {
+export function CapsulePopup({ journal, title, onClose }: CapsulePopupProps) {
   const router = useRouter();
+  const closingRef = useRef(false);
 
   const handleView = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
     onClose();
     router.push(`/history/${journal.id}`);
   }, [onClose, router, journal.id]);
 
+  const handleClose = useCallback(async () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    await recordClose();
+    onClose();
+  }, [onClose]);
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleClose();
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
+  }, [handleClose]);
 
   return (
     <AnimatePresence>
@@ -34,7 +46,7 @@ export function CapsulePopup({ journal, onClose }: CapsulePopupProps) {
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 flex items-center justify-center"
         style={{ backgroundColor: 'rgba(61,61,61,0.4)', backdropFilter: 'blur(4px)' }}
-        onClick={onClose}
+        onClick={handleClose}
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
@@ -48,7 +60,7 @@ export function CapsulePopup({ journal, onClose }: CapsulePopupProps) {
             时间胶囊
           </p>
           <h3 className="text-xl mb-4 text-[#3D3D3D]" style={{ fontFamily: 'var(--font-noto-serif)' }}>
-            一年前的今天，你也这样想过
+            {title}
           </h3>
           <div className="bg-[#F5EDE4] rounded-2xl p-4 mb-4">
             <p className="text-2xl mb-2">{journal.moodEmoji}</p>
@@ -64,7 +76,7 @@ export function CapsulePopup({ journal, onClose }: CapsulePopupProps) {
           </div>
           <div className="flex gap-3 justify-end">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 text-[#D4856A] hover:bg-[#F5EDE4] rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2"
             >
               稍后再说

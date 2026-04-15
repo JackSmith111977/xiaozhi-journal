@@ -1,4 +1,4 @@
-Status: review
+Status: done
 
 # Story 1.1: Next.js 项目初始化 + 设计系统配置
 
@@ -11,7 +11,7 @@ so that 后续所有开发都有统一的技术基础和视觉 Token。
 ## Acceptance Criteria
 
 1. **Given** 空的工作目录
-   **When** 执行 `npx create-next-app@latest ai-smart-journal --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`
+   **When** 执行 `npx create-next-app@latest xiaozhi-journal --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`
    **Then** 项目可启动，`npm run dev` 后访问 `localhost:3000` 可见默认页面
 
 2. **Given** 项目已初始化
@@ -95,3 +95,22 @@ src/
 ### Completion Notes List
 
 ### File List
+
+- `xiaozhi-journal/package.json` — 项目依赖配置
+- `xiaozhi-journal/src/app/layout.tsx` — 根布局 + Google Fonts
+- `xiaozhi-journal/src/app/globals.css` — Tailwind 指令 + CSS 自定义属性
+- `xiaozhi-journal/src/app/page.tsx` — 首页
+- `xiaozhi-journal/src/components/ui/button.tsx`
+- `xiaozhi-journal/src/components/ui/card.tsx`
+- `xiaozhi-journal/src/components/ui/textarea.tsx`
+- `xiaozhi-journal/src/components/ui/dialog.tsx`
+- `xiaozhi-journal/src/components/ui/skeleton.tsx`
+- `xiaozhi-journal/.env.example`
+- `xiaozhi-journal/.gitignore`
+
+### Browser Verification
+
+- **Report:** `browser-verify-1-1.md`
+- **Date:** 2026-04-15
+- **Result:** PASS (7/7 ACs verified)
+- **Screenshot:** `browser-verify-1-1-homepage.png`

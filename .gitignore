@@ -31,3 +31,6 @@ yarn-error.log*
 
 # Claude Code
 .claude/scheduled_tasks.json
+
+# Playwright MCP output
+.playwright-mcp/

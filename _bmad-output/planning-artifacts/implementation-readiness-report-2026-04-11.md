@@ -6,7 +6,7 @@ documentsIncluded: ["prd.md"]
 # Implementation Readiness Assessment Report
 
 **Date:** 2026-04-11
-**Project:** AI Smart Journal
+**Project:** Xiaozhi Journal
 
 ---
 
