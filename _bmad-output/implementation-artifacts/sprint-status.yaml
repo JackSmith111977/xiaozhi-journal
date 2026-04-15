@@ -1,4 +1,4 @@
-# Sprint Status - AI Smart Journal
+# Sprint Status - Xiaozhi Journal
 # Generated: 2026-04-11
 # DO NOT DELETE the STATUS DEFINITIONS comment block below
 
@@ -10,26 +10,26 @@
 
 development_status:
   # Epic 1: 项目基础搭建
-  1-1-nextjs-init-design-system: review
-  1-2-indexeddb-zustand-store: review
-  1-3-seed-data-empty-state: review
+  1-1-nextjs-init-design-system: done
+  1-2-indexeddb-zustand-store: done
+  1-3-seed-data-empty-state: done
   # Epic 2: 3 秒心情打卡
-  2-1-mood-selector: review
-  2-2-journal-input-save: review
+  2-1-mood-selector: done
+  2-2-journal-input-save: done
   # Epic 3: AI 温暖回应
-  3-1-ai-api-route-handler: review
-  3-2-typewriter-quote-card: review
-  3-3-offline-async-callback: review
+  3-1-ai-api-route-handler: done
+  3-2-typewriter-quote-card: done
+  3-3-offline-async-callback: done
   # Epic 4: 情绪波形图
-  4-1-svg-waveform-chart: review
-  4-2-hover-tooltip-no-data: review
+  4-1-svg-waveform-chart: done
+  4-2-hover-tooltip-no-data: done
   # Epic 5: 日记历史与详情
-  5-1-journal-history-list: review
-  5-2-journal-detail: review
+  5-1-journal-history-list: done
+  5-2-journal-detail: done
   # Epic 6: 时间胶囊（P1）
   6-1-time-capsule-match: review
-  6-2-time-capsule-view-history: review
+  6-2-time-capsule-view-history: done
   # Epic 7: 金句分享（P2）
-  7-1-quote-share-image: review
+  7-1-quote-share-image: done
 
-last_updated: "2026-04-11"
+last_updated: "2026-04-15"

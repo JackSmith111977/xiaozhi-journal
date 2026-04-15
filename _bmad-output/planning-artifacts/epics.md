@@ -3,11 +3,11 @@ stepsCompleted: ["step-01-validate-prerequisites", "step-02-design-epics", "step
 inputDocuments: ["prd.md", "architecture.md", "ux-design-specification.md"]
 ---
 
-# AI Smart Journal - Epic Breakdown
+# Xiaozhi Journal - Epic Breakdown
 
 ## Overview
 
-This document provides the complete epic and story breakdown for AI Smart Journal, decomposing the requirements from the PRD, UX Design, and Architecture documents into implementable stories.
+This document provides the complete epic and story breakdown for Xiaozhi Journal, decomposing the requirements from the PRD, UX Design, and Architecture documents into implementable stories.
 
 ## Requirements Inventory
 
@@ -145,7 +145,7 @@ So that 后续所有开发都有统一的技术基础和视觉 Token。
 **Acceptance Criteria:**
 
 **Given** 空的工作目录
-**When** 执行 `npx create-next-app@latest ai-smart-journal --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`
+**When** 执行 `npx create-next-app@latest xiaozhi-journal --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`
 **Then** 项目可启动，`npm run dev` 后访问 `localhost:3000` 可见默认页面
 **And** 安装 `zustand`, `idb`, `framer-motion` 依赖
 **And** 初始化 shadcn/ui（`npx shadcn@latest init`），添加 button, card, textarea, dialog, skeleton 组件
@@ -169,7 +169,7 @@ So that 日记的读写有可靠的本地数据源。
 **Acceptance Criteria:**
 
 **Given** 项目已初始化
-**When** 在 `lib/db.ts` 中创建 IndexedDB 数据库 `ai-smart-journal`
+**When** 在 `lib/db.ts` 中创建 IndexedDB 数据库 `xiaozhi-journal`
 **Then** 包含 `journals` store（字段：id, content, mood, moodEmoji, aiResponse, goldenQuote, moodLabel, timestamp, status, shareCount）
 **And** 包含 `appMeta` store（字段：key, value）
 **And** 提供 CRUD 函数：`addJournal()`, `getJournals()`, `getJournalById()`, `updateJournal()`, `setMeta()`, `getMeta()`
@@ -442,14 +442,16 @@ So that 我能重新阅读日记和 AI 回应。
 
 As a 打开 App 的用户,
 I want 在合适的时机被提醒旧日记,
-So that 我能感受到"一年前的今天，我也这样想过"的共鸣。
+So that 我能感受到跨越时间的自我共鸣。
 
 **Acceptance Criteria:**
 
-**Given** 用户有至少 1 条历史日记
-**When** 用户完成一次新的日记记录后
-**Then** 系统检查是否有历史同日（±3 天）或相似情绪的日记
-**And** 如果匹配成功（随机 30% 概率触发，避免过于频繁）
+**Given** 用户完成一次新的日记记录
+**When** 系统检查是否有可匹配的历史日记
+**Then** 按优先级遍历时间锚点（周年 → 半年 → 季度），找到第一个命中的窗口
+**And** 每个锚点要求：同月同日 ± 容差天数，且时间差 ≥ 该锚点的最小门槛（周年 ≥ 365 天，半年 ≥ 180 天，季度 ≥ 90 天）
+**And** 多个候选时优先选择心情相近（mood ±1）的日记
+**And** 触发成功后执行频率控制（24h 内不重复、同一篇 30 天冷却）
 **Then** 准备展示 TimeCapsuleModal
 
 **Given** 时间胶囊触发
@@ -457,7 +459,7 @@ So that 我能感受到"一年前的今天，我也这样想过"的共鸣。
 **Then** 使用 shadcn Dialog + Framer Motion 弹性缩放（scale 0.9 → 1.0, 0.3s）
 **And** 背景遮罩为 `rgba(61,61,61,0.4)` + `backdrop-filter: blur(4px)`
 **And** 弹窗内显示：匹配的旧日记日期 + 心情 + 金句
-**And** 标题为 "一年前的今天，你也这样想过"
+**And** 标题根据实际时间差动态生成（一年前/半年前/几个月前）
 **And** 包含 "去看看" 按钮（Secondary）和 "稍后再说" 按钮（Tertiary）
 
 ### Story 6.2: 点击查看历史日记
@@ -494,7 +496,7 @@ So that 我可以截图发到朋友圈或发给朋友。
 **Given** 用户看到金句卡片
 **When** 点击金句卡片右上角的分享图标按钮
 **Then** 将金句渲染为一张图片（使用 `html-to-image` 或 Canvas）
-**And** 图片包含：金句文字、"AI Smart Journal" 水印、日期
+**And** 图片包含：金句文字、"Xiaozhi Journal" 水印、日期
 **And** 图片样式与金句卡片一致（杂志引用风格）
 **And** 图片下载或复制到剪贴板
 
