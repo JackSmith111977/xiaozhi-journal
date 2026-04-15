@@ -385,6 +385,8 @@ So that 我能了解某一天的详细心情。
 **When** 鼠标悬停在数据点上
 **Then** 显示 tooltip：日期 + 心情表情 + 日记摘要（前 20 字）
 **And** 数据点高亮放大（scale 1.5）
+**And** tooltip 为独立 HTML 组件，不受 SVG viewBox 裁剪限制
+**And** 边缘数据点的 tooltip 自动 clamp 防止溢出视口
 
 **Given** 波形图无数据（首次使用且种子未加载）
 **When** 页面渲染

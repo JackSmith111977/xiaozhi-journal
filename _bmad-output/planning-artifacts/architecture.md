@@ -253,6 +253,7 @@ xiaozhi-journal/
 │   │   ├── mood-selector.tsx       # 5 表情选择器（定制 SVG）
 │   │   ├── journal-input.tsx       # 日记输入框（聊天气泡风格）
 │   │   ├── emotion-chart.tsx       # 7 天波形图（自绘 SVG + Framer Motion）
+│   │   ├── emotion-tooltip.tsx     # 波形图 hover 气泡（独立 HTML 组件，fixed 定位）
 │   │   ├── golden-quote.tsx        # 金句卡片（Aceternity 3D Card）
 │   │   ├── typewriter.tsx          # 打字机效果（Aceternity Text Generate）
 │   │   ├── xiaozhi-bubble.tsx      # 小知回应气泡
@@ -272,6 +273,7 @@ xiaozhi-journal/
 
 **状态管理：** 单一 Zustand store（状态少，不需要拆分）
 **波形图：** 自绘 SVG `<polyline>` + Framer Motion 弹性生长动画（非 recharts）
+**波形图 Tooltip：** 独立 HTML 组件 `emotion-tooltip.tsx`，`position: fixed` 定位，通过 `getBoundingClientRect` 映射 SVG viewBox 坐标到屏幕像素，边缘自动 clamp 防止溢出视口
 **响应式策略：** 桌面优先，3 断点（sm:375px, md:768px, lg:1024px），Tailwind 默认断点
 
 ### Infrastructure & Deployment
@@ -434,6 +436,7 @@ xiaozhi-journal/
 │   │   ├── mood-selector.tsx       # 5 表情（定制 SVG，非标准 emoji）
 │   │   ├── journal-input.tsx       # 输入框（聊天气泡风格，底部 2px 线）
 │   │   ├── emotion-chart.tsx       # 波形图（自绘 SVG + Framer Motion）
+│   │   ├── emotion-tooltip.tsx     # 波形图 hover 气泡（独立 HTML 组件，fixed 定位）
 │   │   ├── golden-quote.tsx        # 金句卡片（Aceternity 3D Card + 翻转）
 │   │   ├── typewriter.tsx          # 打字机（Aceternity Text Generate）
 │   │   ├── xiaozhi-bubble.tsx      # 小知回应气泡（左侧对齐，带气泡尾）
@@ -460,6 +463,7 @@ xiaozhi-journal/
 | 动效 | 内联 CSS | Framer Motion + Aceternity UI | UX 要求弹簧动画、3D 翻转、打字机 |
 | 字体 | 系统默认 | Noto Serif SC + Noto Sans SC | UX 杂志风格，文学感标题 |
 | 新增组件 | 5 个 | 9 个 | xiaozhi-bubble, typing-indicator, empty-state, ui/* |
+| 新增组件（后续） | 9 个 | 10 个 | emotion-tooltip（独立 HTML 组件，fixed 定位） |
 | 配置文件 | 无 | components.json | shadcn/ui 需要 |
 | 工具函数 | 无 | lib/utils.ts | cn() 合并 Tailwind class |
 
@@ -632,8 +636,8 @@ npx shadcn@latest add button card textarea dialog skeleton
 6. 安装并配置 shadcn/ui 组件
 7. 实现心情选择器 + 日记输入组件
 8. 实现 `/api/journal` Route Handler + AI 调用 + system prompt
-9. 实现情绪波形图组件（自绘 SVG + Framer Motion）
+9. 实现情绪波形图组件（自绘 SVG + Framer Motion）+ hover tooltip（独立 HTML 组件）
 10. 实现金句卡片（Aceternity 3D Card）+ 打字机效果
 11. 实现小知气泡 + 打字机指示器 + 空状态
 12. 添加种子数据 + Fallback 机制
-13. 响应式适配 + 视觉打磨
+13. 响应式适配 + 视觉打磨 + tooltip 边界 clamp 验证

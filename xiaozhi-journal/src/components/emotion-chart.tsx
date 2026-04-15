@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Journal } from '@/types';
 import { MOOD_MAP } from '@/types';
+import { EmotionTooltip } from '@/components/emotion-tooltip';
 
 interface EmotionChartProps {
   journals: Journal[];
@@ -13,6 +14,7 @@ const COLORS = ['#A8C5A0', '#B8B87A', '#C8AB94', '#D89E88', '#D4856A'];
 
 export function EmotionChart({ journals }: EmotionChartProps) {
   const [hovered, setHovered] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   const last7Days = useMemo(() => {
     const now = new Date();
@@ -73,7 +75,7 @@ export function EmotionChart({ journals }: EmotionChartProps) {
       transition={{ duration: 0.8 }}
       className="mb-6"
     >
-      <svg viewBox="0 0 640 120" className="w-full max-w-[640px] mx-auto" style={{ height: '120px' }}>
+      <svg ref={svgRef} viewBox="0 0 640 120" className="w-full max-w-[640px] mx-auto" style={{ height: '120px' }}>
         <defs>
           <linearGradient id="waveGradient" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#A8C5A0" />
@@ -111,38 +113,25 @@ export function EmotionChart({ journals }: EmotionChartProps) {
               <text x={point.x} y={point.y - 10} textAnchor="middle" fontSize="12">
                 {MOOD_MAP[point.mood as 1 | 2 | 3 | 4 | 5]?.emoji}
               </text>
-              <AnimatePresence>
-                {isHovered && journal && (
-                  <motion.g
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    <rect
-                      x={point.x - 70}
-                      y={point.y - 55}
-                      width="140"
-                      height="42"
-                      rx="6"
-                      fill="#F5EDE4"
-                      stroke="#E8E0D8"
-                      strokeWidth="1"
-                    />
-                    <text x={point.x} y={point.y - 38} textAnchor="middle" fontSize="11" fill="#8A817C">
-                      {new Date(point.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}{' '}
-                      {MOOD_MAP[point.mood as 1 | 2 | 3 | 4 | 5]?.label}
-                    </text>
-                    <text x={point.x} y={point.y - 22} textAnchor="middle" fontSize="10" fill="#3D3D3D">
-                      {journal.content.length > 20 ? journal.content.slice(0, 20) + '...' : journal.content}
-                    </text>
-                  </motion.g>
-                )}
-              </AnimatePresence>
             </g>
           );
         })}
       </svg>
+      <AnimatePresence>
+        {hovered !== null && points[hovered] && (
+          <EmotionTooltip
+            key={hovered}
+            svgX={points[hovered].x}
+            svgY={points[hovered].y}
+            viewBoxWidth={640}
+            viewBoxHeight={120}
+            date={points[hovered].date}
+            mood={points[hovered].mood}
+            content={points[hovered].journals[0]?.content ?? ''}
+            svgRef={svgRef}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

@@ -569,7 +569,8 @@ graph TD
 - **颜色**：渐变 `#A8C5A0` → `#D4856A`
 - **状态**：无数据引导文案 / 有数据完整波形
 - **动效**：入场生长 0.8s，新数据点弹性弹跳
-- **交互**：hover 数据点显示 tooltip
+- **交互**：hover 数据点显示 tooltip（独立 HTML 组件，`position: fixed` 定位，不受 SVG viewBox 裁剪限制）
+- **Tooltip 规格**：`#F5EDE4` 背景 + `#E8E0D8` 边框 + `rounded-xl` + `shadow-lg`，数据点上方 8px 居中，边缘自动 clamp 防止溢出视口，Framer Motion 淡入淡出 0.15s
 
 #### QuoteCard（金句卡片 — 杂志引用样式）
 - **用途**：展示 AI 提炼的"今日金句"
@@ -592,6 +593,15 @@ graph TD
 - **用途**：无历史数据引导
 - **内容**：插画 + "你的第一条日记从这里开始 ✨"
 - **动效**：插画轻微浮动 2s 循环
+
+#### EmotionTooltip（情绪气泡）
+- **用途**：波形图数据点 hover 时显示详情
+- **类型**：独立 HTML 组件（非内联 SVG）
+- **定位**：`position: fixed`，通过 `getBoundingClientRect` 映射 SVG viewBox 坐标到屏幕像素
+- **内容**：日期 + 心情标签 + 日记摘要（前 20 字）
+- **样式**：`#F5EDE4` 背景 + `#E8E0D8` 边框 + `rounded-xl` + `shadow-lg`，`pointer-events-none`
+- **交互**：hover 数据点出现，鼠标离开淡出；边缘数据点自动 clamp 防止溢出视口
+- **动效**：Framer Motion 淡入淡出（opacity 0→1, y 5→0, 0.15s）
 
 ### Implementation Roadmap
 
@@ -653,6 +663,18 @@ graph TD
 | 居中卡片 | 白底，圆角 24px，最大宽度 480px，居中 |
 | 出现方式 | 弹性缩放（scale 0.9 → 1.0, 0.3s cubic-bezier） |
 | 关闭方式 | 点击遮罩 / Esc 键 / 右上角 X 按钮 |
+
+### Tooltip Pattern（情绪气泡）
+
+| 维度 | 规格 |
+|------|------|
+| 实现方式 | 独立 HTML 组件（`emotion-tooltip.tsx`），非内联 SVG |
+| 定位 | `position: fixed`，通过 `getBoundingClientRect` 映射 SVG viewBox 坐标 |
+| 内容 | 日期 + 心情标签 + 日记摘要（前 20 字，超出 truncate） |
+| 背景 | `#F5EDE4` + `#E8E0D8` 边框 + `rounded-xl` + `shadow-lg` |
+| 位置 | 数据点上方 8px 居中，边缘自动 clamp 防止溢出视口 |
+| 出现方式 | Framer Motion 淡入淡出（opacity 0→1, y 5→0, 0.15s） |
+| 交互 | `pointer-events-none` 不拦截鼠标事件 |
 
 ### Empty & Loading States
 
