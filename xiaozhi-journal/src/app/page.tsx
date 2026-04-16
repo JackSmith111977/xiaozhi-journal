@@ -180,7 +180,7 @@ export default function Home() {
         {hasAIResponse && (
           <div className="mt-6">
             <XiaozhiBubble text={latestJournal.aiResponse!} />
-            <GoldenQuote quote={latestJournal.goldenQuote!} date={latestJournal.timestamp} journalId={latestJournal.id} />
+            <GoldenQuote quote={latestJournal.goldenQuote!} date={latestJournal.timestamp} journalId={latestJournal.id} journal={latestJournal} />
           </div>
         )}
 

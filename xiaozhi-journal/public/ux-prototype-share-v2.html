@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分享卡片原型 — 方案 B 迭代</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #FDF8F5;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: #3D3D3D;
+    min-height: 100vh;
+  }
+
+  .header {
+    text-align: center;
+    padding: 32px 16px 8px;
+  }
+  .header h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 24px;
+    color: #3D3D3D;
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 14px;
+    color: #8A817C;
+  }
+
+  .prototypes-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+    align-items: flex-start;
+  }
+
+  .proto-card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    width: 380px;
+    flex-shrink: 0;
+  }
+  .proto-label {
+    display: inline-block;
+    background: #F5EDE4;
+    color: #D4856A;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .proto-desc {
+    font-size: 13px;
+    color: #8A817C;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  /* Phone mockup */
+  .phone {
+    background: #FDF8F5;
+    border-radius: 16px;
+    border: 1px solid #E8E0D8;
+    overflow: hidden;
+    position: relative;
+    min-height: 600px;
+  }
+  .phone-content {
+    padding: 24px 16px;
+  }
+
+  /* ====== Golden Quote Card (front) ====== */
+  .quote-card {
+    background: #F5EDE4;
+    border-radius: 24px;
+    padding: 24px 20px;
+    position: relative;
+    border-left: 3px solid #D4856A;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .share-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8A817C;
+    transition: background 0.2s, transform 0.15s;
+    z-index: 5;
+  }
+  .share-btn:hover {
+    background: #E8E0D8;
+    transform: scale(1.1);
+  }
+  .share-btn:active {
+    transform: scale(0.95);
+  }
+  .quote-text {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 18px;
+    font-style: italic;
+    line-height: 1.8;
+    color: #3D3D3D;
+    padding-right: 24px;
+  }
+  .quote-date {
+    font-size: 12px;
+    color: #8A817C;
+    text-align: right;
+    margin-top: 12px;
+  }
+
+  /* ====== Flip Card ====== */
+  .flip-container {
+    perspective: 1200px;
+    margin-top: 8px;
+  }
+  .flip-card {
+    transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+    position: relative;
+  }
+  .flip-card.flipped {
+    transform: rotateY(180deg);
+  }
+  .flip-front, .flip-back {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* ====== Share Card Image (flip back) ====== */
+  .share-card {
+    background: #F5EDE4;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+  }
+
+  /* Accent top bar */
+  .share-card-accent {
+    height: 4px;
+    background: linear-gradient(90deg, #D4856A 0%, #E8C4A0 60%, #A8C5A0 100%);
+  }
+
+  .share-card-body {
+    padding: 24px 20px 20px;
+  }
+
+  /* Header: Brand + Date */
+  .share-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #D4C5B9;
+  }
+  .share-brand {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #D4856A;
+    letter-spacing: 0.05em;
+  }
+  .share-date {
+    font-size: 11px;
+    color: #8A817C;
+  }
+  .share-mood {
+    font-size: 13px;
+    margin-left: 4px;
+  }
+
+  /* Section: Journal Content */
+  .share-section-journal {
+    margin-bottom: 20px;
+  }
+  .share-section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #C8AB94;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .share-journal-text {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #5A524D;
+  }
+
+  /* Divider */
+  .share-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #D4C5B9 50%, transparent 100%);
+    margin: 20px 0;
+  }
+
+  /* Section: Xiaozhi Response */
+  .share-section-response {
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .share-response-bubble {
+    background: rgba(255,255,255,0.6);
+    border-radius: 16px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #5A524D;
+    position: relative;
+  }
+  .share-response-bubble::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: -8px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid rgba(255,255,255,0.6);
+  }
+  .share-response-name {
+    font-size: 11px;
+    color: #D4856A;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .share-divider-accent {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0;
+  }
+  .share-divider-accent::before,
+  .share-divider-accent::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #D4C5B9;
+  }
+  .share-divider-accent .ornament {
+    color: #D4856A;
+    font-size: 14px;
+  }
+
+  /* Section: Golden Quote (hero) */
+  .share-section-quote {
+    margin-bottom: 20px;
+    padding: 20px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 16px;
+    border-left: 3px solid #D4856A;
+  }
+  .share-quote-text {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 17px;
+    font-style: italic;
+    line-height: 1.8;
+    color: #3D3D3D;
+  }
+  .share-quote-attr {
+    font-size: 11px;
+    color: #8A817C;
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  /* Footer: QR + Branding */
+  .share-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.4);
+    border-top: 1px solid #D4C5B9;
+  }
+  .share-qr {
+    width: 64px;
+    height: 64px;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  .share-qr svg {
+    width: 56px;
+    height: 56px;
+  }
+  .share-footer-text {
+    text-align: right;
+  }
+  .share-footer-brand {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #D4856A;
+  }
+  .share-footer-sub {
+    font-size: 10px;
+    color: #8A817C;
+    margin-top: 2px;
+  }
+
+  /* Action buttons below share card */
+  .share-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+  }
+  .share-action-btn {
+    flex: 1;
+    padding: 10px 8px;
+    border: 1px solid #E8E0D8;
+    background: white;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #3D3D3D;
+    font-family: 'Noto Sans SC', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s;
+  }
+  .share-action-btn:hover {
+    background: #F5EDE4;
+    border-color: #D4856A;
+  }
+  .share-action-btn .mini-icon {
+    font-size: 18px;
+  }
+  .share-back-btn {
+    margin-top: 8px;
+    text-align: center;
+  }
+  .share-back-btn button {
+    padding: 8px 24px;
+    border: none;
+    background: transparent;
+    color: #D4856A;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+
+  /* Toast */
+  .toast {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #3D3D3D;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 24px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 50;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.active {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .note {
+    font-size: 12px;
+    color: #C8AB94;
+    margin-top: 12px;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  /* Card variants label */
+  .card-variant-label {
+    font-size: 11px;
+    color: #8A817C;
+    text-align: center;
+    margin-top: 8px;
+    padding: 4px 8px;
+    background: #F5EDE4;
+    border-radius: 8px;
+  }
+
+  /* Responsive */
+  @media (max-width: 800px) {
+    .prototypes-grid {
+      flex-direction: column;
+      align-items: center;
+    }
+    .proto-card {
+      width: 100%;
+      max-width: 380px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>分享卡片 — 方案 B 迭代</h1>
+  <p>点击 ↑ 分享按钮查看翻转后的完整分享卡片</p>
+</div>
+
+<div class="prototypes-grid">
+
+  <!-- ==================== Variant 1: 日记较长 ==================== -->
+  <div class="proto-card">
+    <div class="proto-label">卡片 1/3</div>
+    <div class="proto-desc">方案 A 场景 — 日记内容较长，需要段落截断</div>
+    <div class="phone" id="phone1">
+      <div class="phone-content">
+        <p style="font-size:12px;color:#8A817C;letter-spacing:0.1em;margin-bottom:16px;">2026年4月15日 星期三</p>
+
+        <div class="flip-container">
+          <div class="flip-card" id="flipCard1">
+            <div class="flip-front">
+              <div class="quote-card">
+                <button class="share-btn" onclick="flipCard(1)" aria-label="分享金句">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                    <polyline points="16 6 12 2 8 6"/>
+                    <line x1="12" y1="2" x2="12" y2="15"/>
+                  </svg>
+                </button>
+                <p class="quote-text">"第 3 版不是失败，是第 3 次不肯妥协的自己。"</p>
+                <p class="quote-date">2026/4/12</p>
+              </div>
+            </div>
+            <div class="flip-back">
+              <div class="share-card">
+                <div class="share-card-accent"></div>
+                <div class="share-card-body">
+                  <div class="share-card-header">
+                    <div>
+                      <div class="share-brand">Xiaozhi Journal</div>
+                      <div class="share-date">2026年4月12日 · 周日</div>
+                    </div>
+                    <div>
+                      <span class="share-mood">😔</span>
+                    </div>
+                  </div>
+
+                  <div class="share-section-journal">
+                    <div class="share-section-label">我的日记</div>
+                    <div class="share-journal-text">
+                      明天要交的方案还没写完，改了 3 版都不满意。每次写到一半就觉得不够好，删了重写，重写了又删……已经凌晨两点了，咖啡喝到第三杯。
+                    </div>
+                  </div>
+
+                  <div class="share-divider"></div>
+
+                  <div class="share-section-response">
+                    <div class="share-section-label">小知说</div>
+                    <div class="share-response-bubble">
+                      <div class="share-response-name">小知</div>
+                      改了 3 遍还在改，说明你没放弃自己。方案可能不完美，但你在坚持。
+                    </div>
+                  </div>
+
+                  <div class="share-divider-accent">
+                    <span class="ornament">❝</span>
+                  </div>
+
+                  <div class="share-section-quote">
+                    <p class="share-quote-text">
+                      "第 3 版不是失败，是第 3 次不肯妥协的自己。"
+                    </p>
+                    <p class="share-quote-attr">— Xiaozhi Journal · 2026年4月12日</p>
+                  </div>
+                </div>
+
+                <div class="share-card-footer">
+                  <div class="share-qr">
+                    <svg viewBox="0 0 100 100" fill="#3D3D3D">
+                      <!-- Simplified QR code pattern -->
+                      <rect x="5" y="5" width="25" height="25" rx="3"/>
+                      <rect x="70" y="5" width="25" height="25" rx="3"/>
+                      <rect x="5" y="70" width="25" height="25" rx="3"/>
+                      <rect x="10" y="10" width="15" height="15" rx="2" fill="#F5EDE4"/>
+                      <rect x="13" y="13" width="9" height="9" rx="1"/>
+                      <rect x="75" y="10" width="15" height="15" rx="2" fill="#F5EDE4"/>
+                      <rect x="78" y="13" width="9" height="9" rx="1"/>
+                      <rect x="10" y="75" width="15" height="15" rx="2" fill="#F5EDE4"/>
+                      <rect x="13" y="78" width="9" height="9" rx="1"/>
+                      <!-- Data pattern -->
+                      <rect x="35" y="5" width="5" height="5" rx="0.5"/>
+                      <rect x="45" y="5" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="5" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="15" width="5" height="5" rx="0.5"/>
+                      <rect x="50" y="15" width="5" height="5" rx="0.5"/>
+                      <rect x="60" y="15" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="25" width="5" height="5" rx="0.5"/>
+                      <rect x="45" y="25" width="5" height="5" rx="0.5"/>
+                      <rect x="5" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="15" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="25" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="45" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="70" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="85" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="5" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="25" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="40" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="75" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="90" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="10" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="20" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="50" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="65" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="80" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="90" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="5" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="15" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="45" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="60" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="70" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="85" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="45" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="60" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="75" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="90" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="50" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="65" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="75" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="90" width="5" height="5" rx="0.5"/>
+                      <rect x="45" y="90" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="90" width="5" height="5" rx="0.5"/>
+                      <rect x="70" y="90" width="5" height="5" rx="0.5"/>
+                      <rect x="85" y="90" width="5" height="5" rx="0.5"/>
+                    </svg>
+                  </div>
+                  <div class="share-footer-text">
+                    <div class="share-footer-brand">Xiaozhi Journal</div>
+                    <div class="share-footer-sub">扫码记录你的感受</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="share-actions">
+                <button class="share-action-btn" onclick="doAction('已复制到剪贴板', 1)">
+                  <span class="mini-icon">📋</span>
+                  复制
+                </button>
+                <button class="share-action-btn" onclick="doAction('图片已保存', 1)">
+                  <span class="mini-icon">💾</span>
+                  保存
+                </button>
+                <button class="share-action-btn" onclick="doAction('文字已复制', 1)">
+                  <span class="mini-icon">📝</span>
+                  文字
+                </button>
+              </div>
+              <div class="share-back-btn">
+                <button onclick="unflipCard(1)">← 返回日记</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast1"></div>
+    </div>
+    <p class="note">完整叙事：日记 → 小知回应 → 金句高亮 → 二维码引流</p>
+  </div>
+
+  <!-- ==================== Variant 2: 日记简短 ==================== -->
+  <div class="proto-card">
+    <div class="proto-label">卡片 2/3</div>
+    <div class="proto-desc">方案 B 场景 — 短句日记，金句作为叙事主角</div>
+    <div class="phone" id="phone2">
+      <div class="phone-content">
+        <p style="font-size:12px;color:#8A817C;letter-spacing:0.1em;margin-bottom:16px;">2026年4月15日 星期三</p>
+
+        <div class="flip-container">
+          <div class="flip-card" id="flipCard2">
+            <div class="flip-front">
+              <div class="quote-card">
+                <button class="share-btn" onclick="flipCard(2)" aria-label="分享金句">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                    <polyline points="16 6 12 2 8 6"/>
+                    <line x1="12" y1="2" x2="12" y2="15"/>
+                  </svg>
+                </button>
+                <p class="quote-text">"原来一个小小的肯定，就能让人开心一整天。"</p>
+                <p class="quote-date">2026/4/14</p>
+              </div>
+            </div>
+            <div class="flip-back">
+              <div class="share-card">
+                <div class="share-card-accent"></div>
+                <div class="share-card-body">
+                  <div class="share-card-header">
+                    <div>
+                      <div class="share-brand">Xiaozhi Journal</div>
+                      <div class="share-date">2026年4月14日 · 周二</div>
+                    </div>
+                    <div>
+                      <span class="share-mood">😊</span>
+                    </div>
+                  </div>
+
+                  <div class="share-section-journal">
+                    <div class="share-section-label">我的日记</div>
+                    <div class="share-journal-text">
+                      今天被夸了！虽然只是一个小功能，但开心了一整天。
+                    </div>
+                  </div>
+
+                  <div class="share-divider"></div>
+
+                  <div class="share-section-response">
+                    <div class="share-section-label">小知说</div>
+                    <div class="share-response-bubble">
+                      <div class="share-response-name">小知</div>
+                      开心的时候就该开心，不用谦虚。
+                    </div>
+                  </div>
+
+                  <div class="share-divider-accent">
+                    <span class="ornament">❝</span>
+                  </div>
+
+                  <div class="share-section-quote">
+                    <p class="share-quote-text">
+                      "原来一个小小的肯定，就能让人开心一整天。"
+                    </p>
+                    <p class="share-quote-attr">— Xiaozhi Journal · 2026年4月14日</p>
+                  </div>
+                </div>
+
+                <div class="share-card-footer">
+                  <div class="share-qr">
+                    <svg viewBox="0 0 100 100" fill="#3D3D3D">
+                      <rect x="5" y="5" width="25" height="25" rx="3"/>
+                      <rect x="70" y="5" width="25" height="25" rx="3"/>
+                      <rect x="5" y="70" width="25" height="25" rx="3"/>
+                      <rect x="10" y="10" width="15" height="15" rx="2" fill="#F5EDE4"/>
+                      <rect x="13" y="13" width="9" height="9" rx="1"/>
+                      <rect x="75" y="10" width="15" height="15" rx="2" fill="#F5EDE4"/>
+                      <rect x="78" y="13" width="9" height="9" rx="1"/>
+                      <rect x="10" y="75" width="15" height="15" rx="2" fill="#F5EDE4"/>
+                      <rect x="13" y="78" width="9" height="9" rx="1"/>
+                      <rect x="35" y="5" width="5" height="5" rx="0.5"/>
+                      <rect x="50" y="5" width="5" height="5" rx="0.5"/>
+                      <rect x="60" y="5" width="5" height="5" rx="0.5"/>
+                      <rect x="40" y="15" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="15" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="25" width="5" height="5" rx="0.5"/>
+                      <rect x="50" y="25" width="5" height="5" rx="0.5"/>
+                      <rect x="5" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="20" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="40" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="70" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="85" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="10" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="25" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="45" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="60" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="80" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="90" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="5" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="15" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="50" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="65" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="75" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="90" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="10" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="20" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="40" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="70" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="85" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="45" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="60" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="75" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="90" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="50" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="65" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="80" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="90" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="90" width="5" height="5" rx="0.5"/>
+                      <rect x="70" y="90" width="5" height="5" rx="0.5"/>
+                      <rect x="85" y="90" width="5" height="5" rx="0.5"/>
+                    </svg>
+                  </div>
+                  <div class="share-footer-text">
+                    <div class="share-footer-brand">Xiaozhi Journal</div>
+                    <div class="share-footer-sub">扫码记录你的感受</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="share-actions">
+                <button class="share-action-btn" onclick="doAction('已复制到剪贴板', 2)">
+                  <span class="mini-icon">📋</span>
+                  复制
+                </button>
+                <button class="share-action-btn" onclick="doAction('图片已保存', 2)">
+                  <span class="mini-icon">💾</span>
+                  保存
+                </button>
+                <button class="share-action-btn" onclick="doAction('文字已复制', 2)">
+                  <span class="mini-icon">📝</span>
+                  文字
+                </button>
+              </div>
+              <div class="share-back-btn">
+                <button onclick="unflipCard(2)">← 返回日记</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast2"></div>
+    </div>
+    <p class="note">金句作为视觉焦点，日记和小知回应做铺垫</p>
+  </div>
+
+  <!-- ==================== Variant 3: 深夜情绪 ==================== -->
+  <div class="proto-card">
+    <div class="proto-label">卡片 3/3</div>
+    <div class="proto-desc">方案 C 场景 — 情绪化日记，金句温柔有力</div>
+    <div class="phone" id="phone3">
+      <div class="phone-content">
+        <p style="font-size:12px;color:#8A817C;letter-spacing:0.1em;margin-bottom:16px;">2026年4月15日 星期三</p>
+
+        <div class="flip-container">
+          <div class="flip-card" id="flipCard3">
+            <div class="flip-front">
+              <div class="quote-card">
+                <button class="share-btn" onclick="flipCard(3)" aria-label="分享金句">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                    <polyline points="16 6 12 2 8 6"/>
+                    <line x1="12" y1="2" x2="12" y2="15"/>
+                  </svg>
+                </button>
+                <p class="quote-text">"你已经做得很好了，不用逼自己太紧。"</p>
+                <p class="quote-date">2026/4/15</p>
+              </div>
+            </div>
+            <div class="flip-back">
+              <div class="share-card">
+                <div class="share-card-accent"></div>
+                <div class="share-card-body">
+                  <div class="share-card-header">
+                    <div>
+                      <div class="share-brand">Xiaozhi Journal</div>
+                      <div class="share-date">2026年4月15日 · 周三</div>
+                    </div>
+                    <div>
+                      <span class="share-mood">😔</span>
+                    </div>
+                  </div>
+
+                  <div class="share-section-journal">
+                    <div class="share-section-label">我的日记</div>
+                    <div class="share-journal-text">
+                      周末的下午，什么都不想做，就这样吧。
+                    </div>
+                  </div>
+
+                  <div class="share-divider"></div>
+
+                  <div class="share-section-response">
+                    <div class="share-section-label">小知说</div>
+                    <div class="share-response-bubble">
+                      <div class="share-response-name">小知</div>
+                      允许自己什么都不做，本身就是一种勇敢。周末嘛，就该浪费在美好的无聊上。
+                    </div>
+                  </div>
+
+                  <div class="share-divider-accent">
+                    <span class="ornament">❝</span>
+                  </div>
+
+                  <div class="share-section-quote">
+                    <p class="share-quote-text">
+                      "你已经做得很好了，不用逼自己太紧。"
+                    </p>
+                    <p class="share-quote-attr">— Xiaozhi Journal · 2026年4月15日</p>
+                  </div>
+                </div>
+
+                <div class="share-card-footer">
+                  <div class="share-qr">
+                    <svg viewBox="0 0 100 100" fill="#3D3D3D">
+                      <rect x="5" y="5" width="25" height="25" rx="3"/>
+                      <rect x="70" y="5" width="25" height="25" rx="3"/>
+                      <rect x="5" y="70" width="25" height="25" rx="3"/>
+                      <rect x="10" y="10" width="15" height="15" rx="2" fill="#F5EDE4"/>
+                      <rect x="13" y="13" width="9" height="9" rx="1"/>
+                      <rect x="75" y="10" width="15" height="15" rx="2" fill="#F5EDE4"/>
+                      <rect x="78" y="13" width="9" height="9" rx="1"/>
+                      <rect x="10" y="75" width="15" height="15" rx="2" fill="#F5EDE4"/>
+                      <rect x="13" y="78" width="9" height="9" rx="1"/>
+                      <rect x="40" y="5" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="5" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="15" width="5" height="5" rx="0.5"/>
+                      <rect x="45" y="15" width="5" height="5" rx="0.5"/>
+                      <rect x="60" y="15" width="5" height="5" rx="0.5"/>
+                      <rect x="40" y="25" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="25" width="5" height="5" rx="0.5"/>
+                      <rect x="10" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="25" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="50" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="65" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="75" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="90" y="35" width="5" height="5" rx="0.5"/>
+                      <rect x="5" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="20" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="40" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="70" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="85" y="45" width="5" height="5" rx="0.5"/>
+                      <rect x="10" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="25" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="45" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="60" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="80" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="90" y="55" width="5" height="5" rx="0.5"/>
+                      <rect x="5" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="15" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="50" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="65" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="75" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="90" y="65" width="5" height="5" rx="0.5"/>
+                      <rect x="40" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="70" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="85" y="70" width="5" height="5" rx="0.5"/>
+                      <rect x="35" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="50" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="60" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="75" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="90" y="80" width="5" height="5" rx="0.5"/>
+                      <rect x="40" y="90" width="5" height="5" rx="0.5"/>
+                      <rect x="55" y="90" width="5" height="5" rx="0.5"/>
+                      <rect x="70" y="90" width="5" height="5" rx="0.5"/>
+                      <rect x="85" y="90" width="5" height="5" rx="0.5"/>
+                    </svg>
+                  </div>
+                  <div class="share-footer-text">
+                    <div class="share-footer-brand">Xiaozhi Journal</div>
+                    <div class="share-footer-sub">扫码记录你的感受</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="share-actions">
+                <button class="share-action-btn" onclick="doAction('已复制到剪贴板', 3)">
+                  <span class="mini-icon">📋</span>
+                  复制
+                </button>
+                <button class="share-action-btn" onclick="doAction('图片已保存', 3)">
+                  <span class="mini-icon">💾</span>
+                  保存
+                </button>
+                <button class="share-action-btn" onclick="doAction('文字已复制', 3)">
+                  <span class="mini-icon">📝</span>
+                  文字
+                </button>
+              </div>
+              <div class="share-back-btn">
+                <button onclick="unflipCard(3)">← 返回日记</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast3"></div>
+    </div>
+    <p class="note">展示不同内容长度下的卡片自适应效果</p>
+  </div>
+
+</div>
+
+<script>
+  function flipCard(id) {
+    document.getElementById('flipCard' + id).classList.add('flipped');
+  }
+  function unflipCard(id) {
+    document.getElementById('flipCard' + id).classList.remove('flipped');
+  }
+  function doAction(msg, id) {
+    showToast('toast' + id, msg);
+  }
+  function showToast(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 2000);
+  }
+</script>
+
+</body>
+</html>

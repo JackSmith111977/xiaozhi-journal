@@ -86,7 +86,7 @@ export default function JournalDetail() {
         {journal.aiResponse && <XiaozhiBubble text={journal.aiResponse} />}
 
         {/* Golden Quote */}
-        {journal.goldenQuote && <GoldenQuote quote={journal.goldenQuote} date={journal.timestamp} journalId={journal.id} />}
+        {journal.goldenQuote && <GoldenQuote quote={journal.goldenQuote} date={journal.timestamp} journalId={journal.id} journal={journal} />}
       </div>
     </main>
   );

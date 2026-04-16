@@ -1,168 +1,265 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import type { Journal } from '@/types';
+import { ShareCard } from '@/components/share-card';
+import { renderShareCardToCanvas } from '@/lib/share-card-renderer';
 import { updateJournal as dbUpdate, getJournalById } from '@/lib/db';
 
 interface GoldenQuoteProps {
   quote: string;
   date?: string;
   journalId?: string;
+  journal?: Journal;
 }
 
-async function generateQuoteImage(quote: string, date?: string): Promise<Blob | null> {
-  const canvas = document.createElement('canvas');
-  const dpr = 2;
-  const width = 640;
-  const height = 360;
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
+type ShareAction = 'copy' | 'download' | 'copyText';
+type ShareFeedback = { action: ShareAction; message: string } | null;
 
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-  ctx.scale(dpr, dpr);
-
-  // Background
-  ctx.fillStyle = '#F5EDE4';
-  ctx.fillRect(0, 0, width, height);
-
-  // Left accent line
-  ctx.fillStyle = '#D4856A';
-  ctx.fillRect(20, 30, 4, height - 60);
-
-  // Quote text
-  ctx.fillStyle = '#3D3D3D';
-  ctx.font = 'italic 24px "Noto Serif SC", serif';
-  ctx.textBaseline = 'top';
-
-  const quoteText = `"${quote}"`;
-  const maxWidth = width - 60;
-  const lineHeight = 36;
-  const words = quoteText.split('');
-  let line = '';
-  let y = 50;
-
-  for (let i = 0; i < words.length; i++) {
-    const testLine = line + words[i];
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth && i > 0) {
-      ctx.fillText(line, 44, y);
-      line = words[i];
-      y += lineHeight;
-    } else {
-      line = testLine;
-    }
-  }
-  ctx.fillText(line, 44, y);
-
-  // Date
-  if (date) {
-    ctx.fillStyle = '#8A817C';
-    ctx.font = '12px "Noto Sans SC", sans-serif';
-    ctx.textAlign = 'right';
-    const formattedDate = new Date(date).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-    ctx.fillText(`— Xiaozhi Journal · ${formattedDate}`, width - 30, height - 40);
-    ctx.textAlign = 'left';
-  }
-
-  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-}
-
-export function GoldenQuote({ quote, date, journalId }: GoldenQuoteProps) {
-  const [revealed, setRevealed] = useState(false);
+export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProps) {
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const quoteRef = useRef<HTMLDivElement>(null);
+  const [flipped, setFlipped] = useState(false);
+  const [feedback, setFeedback] = useState<ShareFeedback>(null);
+  const [loading, setLoading] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
 
-  const handleReveal = () => {
-    if (reducedMotion) {
-      setRevealed(true);
-      return;
-    }
-    setTimeout(() => setRevealed(true), 600);
+  const showFeedback = useCallback((action: ShareAction, message: string) => {
+    setFeedback({ action, message });
+    setTimeout(() => setFeedback(null), 2000);
+  }, []);
+
+  const handleShare = () => {
+    setFlipped(true);
   };
 
-  const handleShare = async () => {
+  const handleBack = () => {
+    setFlipped(false);
+    setFeedback(null);
+  };
+
+  const incrementShareCount = useCallback(async () => {
+    if (journalId) {
+      const journalEntry = await getJournalById(journalId);
+      if (journalEntry) {
+        await dbUpdate({ ...journalEntry, shareCount: (journalEntry.shareCount ?? 0) + 1 });
+      }
+    }
+  }, [journalId]);
+
+  const generateImage = useCallback(async (): Promise<Blob | null> => {
+    if (!cardRef.current) return null;
+    const rect = cardRef.current.getBoundingClientRect();
+    const canvas = await renderShareCardToCanvas({
+      date: date || new Date().toISOString(),
+      moodEmoji: journal?.moodEmoji || '😐',
+      content: journal?.content || '',
+      aiResponse: journal?.aiResponse || '',
+      quote,
+      width: Math.round(rect.width),
+    });
+    if (!canvas) return null;
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }, [date, journal, quote]);
+
+  const handleCopy = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
     try {
-      const blob = await generateQuoteImage(quote, date);
+      const blob = await generateImage();
       if (!blob) return;
 
       if (navigator.clipboard && navigator.clipboard.write) {
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob }),
         ]);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        showFeedback('copy', '已复制到剪贴板');
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `xiaozhi-quote-${Date.now()}.png`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        showFeedback('download', '图片已保存');
       }
-
-      // Increment shareCount
-      if (journalId) {
-        const journal = await getJournalById(journalId);
-        if (journal) {
-          await dbUpdate({ ...journal, shareCount: (journal.shareCount || 0) + 1 });
-        }
-      }
-    } catch {
-      // Share best-effort
+      await incrementShareCount();
+    } catch (err) {
+      console.error('[Share] Copy failed:', err);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [generateImage, loading, showFeedback, incrementShareCount]);
+
+  const handleDownload = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const blob = await generateImage();
+      if (!blob) return;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `xiaozhi-quote-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showFeedback('download', '图片已保存');
+      await incrementShareCount();
+    } catch (err) {
+      console.error('[Share] Download failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [generateImage, loading, showFeedback, incrementShareCount]);
+
+  const handleCopyText = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      await navigator.clipboard.writeText(quote);
+      showFeedback('copyText', '文字已复制');
+      await incrementShareCount();
+    } catch (err) {
+      console.error('[Share] Copy text failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [quote, loading, showFeedback, incrementShareCount]);
 
   return (
-    <motion.div
-      ref={quoteRef}
-      initial={!reducedMotion ? { rotateY: 90, opacity: 0 } : { opacity: 1 }}
-      animate={!reducedMotion ? { rotateY: 0, opacity: 1 } : { opacity: 1 }}
-      transition={{ duration: 0.6, ease: 'easeOut' }}
-      onAnimationComplete={handleReveal}
-      className="my-6 bg-[#F5EDE4] rounded-3xl py-6 px-6 shadow-md relative"
-      style={{ borderLeft: '3px solid #D4856A' }}
-    >
-      {/* Share button */}
-      <button
-        onClick={handleShare}
-        className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#E8E0D8] transition-colors text-[#8A817C] focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2"
-        aria-label="分享金句"
-        title="分享金句"
+    <div className="my-6" style={{ perspective: '1200px' }}>
+      <motion.div
+        ref={cardRef}
+        initial={!reducedMotion ? { rotateY: 90, opacity: 0 } : { opacity: 1 }}
+        animate={
+          !reducedMotion
+            ? flipped
+              ? { rotateY: 180, opacity: 1 }
+              : { rotateY: 0, opacity: 1 }
+            : { opacity: 1 }
+        }
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+        className="relative"
+        style={{ transformStyle: 'preserve-3d' }}
       >
-        {copied ? (
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : (
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-            <polyline points="16 6 12 2 8 6" />
-            <line x1="12" y1="2" x2="12" y2="15" />
-          </svg>
-        )}
-      </button>
+        {/* FRONT: Original golden quote card */}
+        <div
+          className="bg-[#F5EDE4] rounded-3xl py-6 px-6 shadow-md relative"
+          style={{ borderLeft: '3px solid #D4856A', backfaceVisibility: 'hidden' }}
+        >
+          <button
+            onClick={handleShare}
+            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#E8E0D8] transition-colors text-[#8A817C] focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2"
+            aria-label="分享金句"
+            title="分享金句"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+          </button>
 
-      <blockquote
-        className="text-xl italic leading-relaxed text-[#3D3D3D] pr-8"
-        style={{ fontFamily: 'var(--font-noto-serif)', fontStyle: 'italic' }}
-      >
-        "{quote}"
-      </blockquote>
-      {date && (
-        <p className="text-xs text-[#8A817C] mt-3 text-right">
-          {new Date(date).toLocaleDateString('zh-CN')}
-        </p>
-      )}
-    </motion.div>
+          <blockquote
+            className="text-xl italic leading-relaxed text-[#3D3D3D] pr-8"
+            style={{ fontFamily: 'var(--font-noto-serif)', fontStyle: 'italic' }}
+          >
+            &ldquo;{quote}&rdquo;
+          </blockquote>
+          {date && (
+            <p className="text-xs text-[#8A817C] mt-3 text-right">
+              {new Date(date).toLocaleDateString('zh-CN')}
+            </p>
+          )}
+        </div>
+
+        {/* BACK: Share card preview */}
+        {flipped && (
+          <div
+            className="absolute inset-0"
+            style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+          >
+            <ShareCard
+              date={date || new Date().toISOString()}
+              moodEmoji={journal?.moodEmoji || '😐'}
+              content={journal?.content || ''}
+              aiResponse={journal?.aiResponse || ''}
+              quote={quote}
+            />
+
+            {/* Action buttons */}
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={handleCopy}
+                disabled={loading}
+                className={`flex-1 py-2.5 px-2 border rounded-xl text-[13px] flex flex-col items-center gap-1 transition-all
+                  ${feedback?.action === 'copy'
+                    ? 'bg-[#D4856A] text-white border-[#D4856A]'
+                    : 'bg-white border-[#E8E0D8] text-[#3D3D3D] hover:bg-[#F5EDE4] hover:border-[#D4856A]'
+                  } disabled:opacity-50`}
+              >
+                <span className="text-lg">📋</span>
+                {feedback?.action === 'copy' ? '✓' : '复制'}
+              </button>
+              <button
+                onClick={handleDownload}
+                disabled={loading}
+                className={`flex-1 py-2.5 px-2 border rounded-xl text-[13px] flex flex-col items-center gap-1 transition-all
+                  ${feedback?.action === 'download'
+                    ? 'bg-[#D4856A] text-white border-[#D4856A]'
+                    : 'bg-white border-[#E8E0D8] text-[#3D3D3D] hover:bg-[#F5EDE4] hover:border-[#D4856A]'
+                  } disabled:opacity-50`}
+              >
+                <span className="text-lg">💾</span>
+                {feedback?.action === 'download' ? '✓' : '保存'}
+              </button>
+              <button
+                onClick={handleCopyText}
+                disabled={loading}
+                className={`flex-1 py-2.5 px-2 border rounded-xl text-[13px] flex flex-col items-center gap-1 transition-all
+                  ${feedback?.action === 'copyText'
+                    ? 'bg-[#D4856A] text-white border-[#D4856A]'
+                    : 'bg-white border-[#E8E0D8] text-[#3D3D3D] hover:bg-[#F5EDE4] hover:border-[#D4856A]'
+                  } disabled:opacity-50`}
+              >
+                <span className="text-lg">📝</span>
+                {feedback?.action === 'copyText' ? '✓' : '文字'}
+              </button>
+            </div>
+
+            {/* Back button */}
+            <div className="text-center mt-2">
+              <button
+                onClick={handleBack}
+                className="py-2 px-6 text-[13px] text-[#D4856A] hover:underline focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2 rounded"
+              >
+                ← 返回日记
+              </button>
+            </div>
+
+            {/* Feedback toast */}
+            {feedback && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#3D3D3D] text-white px-5 py-2.5 rounded-full text-[13px] whitespace-nowrap z-10"
+              >
+                {feedback.message}
+              </motion.div>
+            )}
+          </div>
+        )}
+      </motion.div>
+    </div>
   );
 }
