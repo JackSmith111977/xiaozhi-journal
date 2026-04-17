@@ -1,11 +1,17 @@
 ---
-stepsCompleted: ["step-01-init", "step-02-context", "step-03-starter", "step-04-decisions", "step-05-patterns", "step-06-structure", "step-07-validation", "step-08-complete"]
+stepsCompleted: ["step-01-init", "step-02-context", "step-03-starter", "step-04-decisions", "step-05-patterns", "step-06-structure"]
+inputDocuments:
+  - 'prd.md'
+  - 'ux-design-specification.md'
+  - 'epics.md'
+  - 'correct-course-change-proposal'
 workflowType: 'architecture'
-lastStep: 8
-status: 'complete'
-completedAt: '2026-04-11'
-uxReviewed: true
-uxReviewedAt: '2026-04-11'
+project_name: 'Xiaozhi Journal'
+user_name: 'Kei'
+date: '2026-04-16'
+classification: ''
+lastStep: 1
+status: 'in_progress'
 ---
 
 # Architecture Decision Document (UX Updated)
@@ -16,8 +22,11 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ## 输入文档
 
-- PRD: `_bmad-output/planning-artifacts/prd.md` (~470 行)
+- PRD: `_bmad-output/planning-artifacts/prd.md` (~575 行，商业版，已修复全部违规)
 - UX Design: `_bmad-output/planning-artifacts/ux-design-specification.md` (~740 行)
+- Epics: `_bmad-output/planning-artifacts/epics.md`（黑客松版 7 个 Epic，全部已实现）
+- Change Proposal: `correct-course-change-proposal`（已批准，战略转向决策）
+- Project Context: `docs/project-context.md`（代码库扫描，15 个模式 + 12 条 AI Agent 规则）
 
 ---
 
@@ -25,57 +34,58 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Requirements Overview
 
-**Functional Requirements:**
-- 日记记录 (FR1-FR5): 心情表情打卡 + 自由文本 + 历史查看
-- AI 互动 (FR6-FR9): AI 回应 + 金句提炼 + 情绪标签 + Fallback
-- 情绪可视化 (FR10-FR12): 7 天波形图 + 表情标注 + 空状态引导
-- 时间胶囊 (FR13-FR14, FR19): 多时间窗口梯度推送 + 频率控制
-- 数据管理 (FR15-FR17): IndexedDB 持久化 + 离线队列 + 种子数据
-- 分享 (FR18): 金句卡片生成图片
+**Functional Requirements（35 条，8 个功能域）：**
 
-**Non-Functional Requirements:**
-- 首屏 ≤ 2s，AI 响应 5-8s / 超时 15s
-- API Key 服务端代理，不暴露前端
-- 全量 IndexedDB 本地存储，零上传
-- 网络断开不丢数据，pending 重试
-- API 失败时本地金句降级
+| 域 | FR 编号 | 数量 | 架构影响 |
+|---|---------|------|---------|
+| 用户认证 | FR1-FR4 | 4 | 需要 Supabase Auth + JWT + 微信 OAuth 流程 |
+| 日记记录 | FR5-FR9 | 5 | 现有 UI 组件可复用，数据写入改为 Supabase |
+| AI 互动 | FR10-FR14 | 5 | 需要双模式：平台 AI 代理 + BYOK 直调路由 |
+| AI 额度管理 | FR15-FR19 | 5 | 需要 ai_usage 表 + 每日计数 + 订阅状态检查 |
+| 情绪可视化 | FR20-FR22 | 3 | 现有波形图组件 95% 可复用 |
+| 时间胶囊 | FR23-FR25 | 3 | 现有匹配逻辑 95% 可复用 |
+| 数据管理 | FR26-FR30 | 5 | 需要 Supabase 实时订阅 + 本地缓存层 |
+| 分享 | FR31-FR32 | 2 | 现有分享组件 95% 可复用 |
+| 付费订阅 | FR33-FR35 | 3 | 需要 subscriptions 表 + 支付网关集成 |
+
+**Non-Functional Requirements（23 条，6 个类别）：**
+
+| 域 | NFR 编号 | 数量 | 架构影响 |
+|---|---------|------|---------|
+| 性能 | NFR1-NFR5 | 5 | 首屏优化、AI 响应超时、波形图渲染性能 |
+| 安全 | NFR6-NFR10 | 5 | TLS 加密、API Key 加密、RLS 行级安全、强哈希 |
+| 可用性 | NFR11-NFR13 | 3 | 离线优先、99.5% SLA、自动同步 |
+| 可扩展 | NFR14-NFR15 | 2 | 1K→10K DAU 无需架构变更 |
+| 合规 | NFR16-NFR23 | 8 | GDPR 导出/删除、隐私政策、危机词检测、敏感健康数据分类、年龄确认 |
+| 成本 | NFR20-NFR21 | 2 | AI 成本 ≤ 40% 收入、成本看板 |
 
 **Scale & Complexity:**
 
-- Primary domain: 全栈 Web App (SPA + API Proxy)
-- Complexity level: 低
-- Estimated architectural components: ~6
+- Primary domain: 全栈 Web App + 跨平台（Next.js + Taro + Supabase BaaS）
+- Complexity level: 中（medium）— 商业级产品但团队仅 1 人
+- Estimated architectural components: ~12
 
 ### Technical Constraints & Dependencies
 
-- Next.js App Router + TypeScript
-- Zustand (轻量状态管理)
-- **TailwindCSS** + **shadcn/ui**（基础组件）+ **Aceternity UI**（动效组件）
-- **Framer Motion**（弹簧动画、页面过渡）
-- IndexedDB via `idb` 库
-- 阿里云百炼 API (OpenAI 兼容接口)
-- **字体**：Noto Serif SC（标题/金句）+ Noto Sans SC（正文）— Google Fonts
-- 桌面浏览器 Chrome/Edge 最新版，移动端适配（375px+）
-- 无需登录/注册/后端数据库
-
-**新增依赖（UX 审阅后添加）：**
-
-| 依赖 | 用途 | 来源 |
-|------|------|------|
-| `framer-motion` | 弹簧动画、页面淡入淡出 | UX 波形图/卡片/输入框动效 |
-| `shadcn/ui` | Button, Card, Textarea, Dialog, Skeleton | UX 基础组件 |
-| Aceternity UI | Text Generate Effect, 3D Card | 打字机、金句翻转 |
-| `@next/font/google` | Noto Serif SC + Noto Sans SC | UX 字体系统 |
-
-**移除依赖：**
-- ~~`recharts`~~ → 波形图改为**自绘 SVG + Framer Motion**（UX 要求有机生长动画，recharts 无法满足）
+- Next.js 16.2.3 App Router + TypeScript strict mode（**不是传统 Next.js**，有 breaking changes）
+- React 19.2.4（Server Components 默认）
+- TailwindCSS v4（`@theme` 指令，非 v3 配置方式）
+- 现有代码：Zustand 5.0.12 + idb 8.0.3 + Framer Motion 12.38.0 + shadcn/ui
+- Supabase（PostgreSQL + Auth + Realtime + RLS + Storage）
+- 阿里云百炼 API（OpenAI 兼容接口，qwen-turbo 模型）
+- 微信 OAuth 登录（小程序原生 + Web OAuth）
+- 支付网关：微信支付 + 支付宝
+- Taro 跨平台（小程序 + App RN/H5 壳）
+- 目标用户场景：碎片化记录（小程序）、深度使用（Web）、高频推送（App）
 
 ### Cross-Cutting Concerns Identified
 
-1. **数据持久化层** — 所有日记读写走 IndexedDB，统一封装
-2. **AI 调用管道** — 超时控制 + 降级 + 打字机动画
-3. **离线处理** — pending 标记 + 异步重试
-4. **情绪数据计算** — 7 天趋势聚合 + 表情映射
+1. **数据持久化层** — 统一封装 IndexedDB（本地缓存）+ Supabase（云端），定义 CacheProvider 接口
+2. **AI 调用管道** — 超时控制 + 降级 + 打字机动画 + BYOK 路由 + 限次逻辑
+3. **离线处理** — pending 标记 + 异步重试 + 冲突解决（最后写入优先）
+4. **情绪数据计算** — 7 天趋势聚合 + 表情映射（现有逻辑可复用）
+5. **认证与鉴权** — JWT + RLS 策略 + 微信 OAuth 自定义流程
+6. **成本监控** — AI 调用量按日/周/月统计，确保 ≤ 40% 收入
 
 ---
 
@@ -83,223 +93,202 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Primary Technology Domain
 
-Web Application (Next.js App Router) based on PRD requirements
+全栈 Web App（Next.js App Router）基于 PRD 需求分析。
 
 ### Starter Options Considered
 
-| 方案 | 评估 |
-|------|------|
-| `create-next-app@latest` 官方脚手架 | ✅ 推荐 — 官方维护，内置 TS + Tailwind + App Router |
-| 第三方 T3 Stack | ❌ 过度 — 包含 tRPC/Prisma 等不需要的组件 |
-| 自定义模板 | ❌ 不必要 — 官方脚手架已满足需求 |
+| 选项 | 命令 | 适用性 | 评估 |
+|------|------|--------|------|
+| **Turborepo 官方** | `pnpm create turbo@latest` | 中 | 官方维护，支持 pnpm workspaces + Next.js，但需要迁移现有代码 |
+| **next-forge** | `git clone vercel/next-forge` | 低 | 生产级但包含大量不需要的组件（Auth、Analytics、Billing），需大量清理 |
+| **从零搭建 Monorepo** | 手动配置 | 低 | 最灵活但工程量大，不适合 1 人项目 |
+| **保留现有项目** | 现有 `xiaozhi-journal/` | **高** | 代码已完整可用，Phase 1-2 只需要 Web 端 |
 
-### Selected Starter: create-next-app@latest
+### Selected Starter: 保留现有 `xiaozhi-journal/` 项目
 
-**Rationale:**
-PRD 已明确技术栈，官方脚手架覆盖所有基础需求。无需引入额外 boilerplate。
+**Rationale for Selection:**
 
-**Initialization Command:**
-
-```bash
-npx create-next-app@latest xiaozhi-journal \
-  --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"
-```
+PRD 已明确技术栈，现有项目已完整实现 7 个 Epic（约 20 个 Story），包含所有核心 UI 组件。Phase 1-2 只需要 Web 端，Monorepo 迁移是额外工作量。决定：保留现有项目作为 Phase 1-2 的起点，Phase 3 需要 Taro 时再迁移为 Monorepo。
 
 **Architectural Decisions Provided by Starter:**
 
-**Language & Runtime:** TypeScript 完整配置，strict mode 开启
+**Language & Runtime:** TypeScript 5.x，strict mode 开启，ES2017 target
 
-**Styling Solution:** TailwindCSS 预装，PostCSS 已配置
+**Styling Solution:** TailwindCSS v4 + `@theme` 指令，PostCSS 已配置，"暖日"色板已定义
 
-**Build Tooling:** Turbopack 开发服务器，生产构建优化内置
+**Build Tooling:** Next.js 16.2.3 内置 Turbopack 开发服务器，生产构建优化
 
-**Testing Framework:** 未预设（本项目不写单元测试，手动验证）
+**Testing Framework:** 未预设（本项目手动验证，不写单元测试）
 
-**Code Organization:** `src/` 目录 + App Router 文件路由
+**Code Organization:** `src/` 目录 + App Router 文件路由，`@/*` 别名到 `./src/*`
 
 **Development Experience:** 热更新、Fast Refresh、TypeScript 类型检查
 
-**需要额外安装的依赖：**
+**需要额外安装的依赖（Phase 1）：**
 
 | 依赖 | 用途 |
 |------|------|
-| `zustand` | 状态管理 |
-| `idb` | IndexedDB 封装 |
-| `framer-motion` | 弹簧动画、页面过渡 |
-| `shadcn/ui` | 基础组件（Button, Card, Textarea, Dialog, Skeleton） |
-| `@next/font/google` | Noto Serif SC + Noto Sans SC |
-| Aceternity UI | 打字机效果、3D 卡片（复制源码到项目） |
+| `@supabase/supabase-js` | Supabase 客户端 SDK |
+| （其余现有依赖保持不变） | — |
 
-**Note:** 项目初始化是第一个实现任务。
+**Phase 3 Monorepo 迁移（届时执行）：**
+
+```bash
+pnpm create turbo@latest xiaozhi-journal-monorepo
+```
+
+迁移现有 `xiaozhi-journal/` 到 `apps/web/`，新增 `apps/miniapp/`（Taro），`packages/shared/`（共享类型 + 业务逻辑）。
+
+**Note:** 现有项目即为起点，第一个实现任务是 Supabase 集成而非项目初始化。
 
 ---
 
 ## Core Architectural Decisions
 
+### Decision Priority Analysis
+
+**Critical Decisions (Block Implementation):**
+- Supabase 数据模型设计（6 张表 + RLS 策略）
+- 认证流程（Supabase Auth + 邮箱登录）
+- AI 双模式管道（平台限次 + BYOK 直调）
+- 离线优先架构（IndexedDB 缓存层 + 自动同步）
+- 行级安全策略（用户数据隔离）
+
+**Important Decisions (Shape Architecture):**
+- 冲突解决策略（最后写入优先）
+- API Key 应用层加密（AES-256-GCM）
+- 限次逻辑（服务端检查 ai_usage 表）
+- Server/Client 组件边界
+- Vercel + Supabase 部署策略
+
+**Deferred Decisions (Post-MVP):**
+- Monorepo 迁移（Phase 3，需要 Taro 时执行）
+- 微信 OAuth 登录（Phase 3）
+- CI/CD 高级功能（Phase 4）
+- 错误监控 Sentry（Phase 4）
+- 多语言支持（Post-MVP）
+
 ### Data Architecture
 
-**IndexedDB Stores:** 多表设计
+**数据库：Supabase PostgreSQL**
 
-| Store | 用途 |
-|-------|------|
-| `journals` | 日记条目 |
-| `appMeta` | 应用级元数据（是否已加载种子数据等） |
+| 表名 | 核心字段 | 说明 |
+|------|---------|------|
+| `profiles` | id, email, nickname, avatar_url, created_at | 用户档案 |
+| `journals` | id, user_id, content, mood, mood_emoji, ai_response, golden_quote, mood_label, created_at, status | 日记（RLS：仅本人）|
+| `ai_usage` | id, user_id, date, platform_calls, byok_calls, tier | 每日 AI 使用量 |
+| `user_api_keys` | id, user_id, encrypted_key, provider, is_active | 用户 API Key（AES-256-GCM 加密）|
+| `subscriptions` | id, user_id, tier, status, start_date, end_date | 订阅计划 |
+| `app_meta` | id, user_id, key, value | 用户级元数据 |
 
-**`journals` 数据模型：**
+**数据迁移策略：** Phase 1 保留 IndexedDB 作为本地缓存层，数据先写本地再同步到 Supabase。旧黑客松版本数据通过迁移工具导入。
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | `string` | UUID |
-| `content` | `string` | 日记正文 |
-| `mood` | `number` | 1-5（对应 😡 😔 😐 😊 😴） |
-| `moodEmoji` | `string` | 表情符号文本 |
-| `aiResponse` | `string \| null` | AI 回应文本 |
-| `goldenQuote` | `string \| null` | 今日金句 |
-| `moodLabel` | `string \| null` | AI 识别的情绪标签 |
-| `timestamp` | `string` | ISO 时间字符串 |
-| `status` | `'pending' \| 'ai_ready' \| 'ai_done'` | AI 处理状态 |
-| `shareCount` | `number` | 金句被分享次数（可选） |
+**缓存策略：** IndexedDB 作为本地缓存层，定义统一的 `CacheProvider` 接口（get/set/sync/delete），上层业务不关心具体存储实现。
 
-**`appMeta` 数据模型：**
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `key` | `string` | 元数据键 |
-| `value` | `any` | 元数据值 |
+**冲突解决：** 多端同时编辑时，以最后写入时间为准（last-write-wins），用户不会丢失任何日记。
 
 ### Authentication & Security
 
-- API Key 存储在 `.env.local`，不提交到 git
-- 环境变量名：`DASHSCOPE_API_KEY`（阿里云百炼）
-- 提供 `.env.example` 模板，占位符 `sk-xxx`
-- 无需认证/登录（本地单用户）
+**认证方式：** Supabase Auth（邮箱/密码，Phase 1）+ 微信 OAuth（Phase 3）
+
+**API Key 存储：** 用户 BYOK Key 使用应用层 AES-256-GCM 加密存储于 `user_api_keys` 表，不依赖 Supabase Vault。
+
+**平台 AI Key：** 通过服务端 Route Handler 代理调用，不暴露到客户端（现有模式延续）。
+
+**密码哈希：** Supabase Auth 内置 bcrypt，不需要自定义实现。
+
+**行级安全（RLS）：** 每个用户只能访问自己的数据，通过 Supabase RLS 策略实现：
+```sql
+CREATE POLICY "Users can only access their own journals"
+ON journals FOR ALL
+USING (auth.uid() = user_id);
+```
 
 ### API & Communication Patterns
 
-**`POST /api/journal`**
+**API 设计：** Next.js Route Handlers（REST 风格）
 
-请求体：`{ content: string, mood: number }`
+**端点规划：**
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/api/auth/*` | POST | Supabase Auth 代理 |
+| `/api/journal` | POST | 保存日记 + 触发 AI（双模式：平台/BYOK）|
+| `/api/journals` | GET | 分页获取日记列表 |
+| `/api/journal/:id` | GET | 获取单条日记 |
+| `/api/ai/usage` | GET | 获取当日 AI 使用量 |
+| `/api/sync` | POST | 本地缓存同步到云端 |
 
-响应体（成功）：`{ response: string, goldenQuote: string, moodLabel: string, fromFallback: false }`
+**错误处理标准：** AI 失败返回 200 + `fromFallback: true`，不走 HTTP error code（现有模式延续）。
 
-响应体（降级）：`{ response: string, goldenQuote: string, moodLabel: "本地", fromFallback: true }`
+**BYOK 路由：** 同一端点 `/api/journal`，通过请求体 `useByok` 参数或用户设置决定使用平台 Key 还是用户 Key。
 
-**错误处理标准：**
-- 15 秒超时 → 本地 fallback 金句
-- 网络错误 → 本地 fallback 金句
-- JSON 解析失败 → 重试一次 → 失败则 fallback
-- 所有降级不走 HTTP error，返回 200 + `fromFallback: true`
+**限次逻辑：** 服务端 Route Handler 内嵌检查 `ai_usage` 表当日计数，免费用户每日 5 次上限。
 
 ### Frontend Architecture
 
-**设计系统（来自 UX）：**
+**Server/Client 组件边界：**
+- 交互组件（心情选择器、日记输入框、波形图等）：`"use client"`
+- 页面/布局（首页、历史页等）：Server Components 默认
+- AI 回应组件：Client（需要打字机动画）
 
-| 层级 | 工具 | 用途 |
-|------|------|------|
-| 样式基础 | **TailwindCSS** | 设计 Token（色板、间距、圆角、字体） |
-| 基础组件 | **shadcn/ui** | Button, Card, Textarea, Dialog, Skeleton |
-| 动效组件 | **Aceternity UI** | Text Generate Effect（打字机）、3D Card（金句翻转） |
-| 动画库 | **Framer Motion** | 弹簧动画、页面淡入淡出、波形图生长 |
-
-**设计 Token（「暖日」色板）：**
-
-| Token | 色值 | 用途 |
-|-------|------|------|
-| `bg-primary` | `#FDF8F5` | 页面背景（极浅暖米白） |
-| `bg-secondary` | `#F5EDE4` | 卡片/区块背景 |
-| `primary` | `#E8C4A0` | 主色（柔棕） |
-| `accent` | `#D4856A` | 强调色（暖珊瑚，按钮、金句高亮） |
-| `text-primary` | `#3D3D3D` | 主文字（深暖灰，非纯黑） |
-| `text-secondary` | `#8A817C` | 次要文字（中暖灰） |
-| `error` | `#D4856A` | 暖珊瑚（替代红色，保持温度） |
-
-**圆角系统：** sm=8px, md=12px, lg=16px, xl=24px, full=9999px（偏大，传达友好温柔）
-
-**字体系统：**
-- 标题/金句：`Noto Serif SC` 700/600/400 italic
-- 正文：`Noto Sans SC` 400
-- 通过 `@next/font/google` 加载
-
-**目录结构（UX 更新后）：**
-
-```
-xiaozhi-journal/
-├── README.md
-├── package.json
-├── next.config.ts
-├── tailwind.config.ts          # 扩展：暖日色板 + 圆角 + 阴影
-├── tsconfig.json
-├── .env.local
-├── .env.example                # DASHSCOPE_API_KEY=sk-xxx
-├── .gitignore
-├── components.json             # shadcn/ui 配置
-├── public/
-│   └── favicon.ico
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx          # 根布局 + Google Fonts 加载
-│   │   ├── page.tsx            # 首页（波形图 + 心情 + 输入 + AI 回应）
-│   │   ├── globals.css         # Tailwind 指令 + 自定义 CSS 变量
-│   │   └── api/
-│   │       └── journal/
-│   │           └── route.ts    # POST: AI 代理
-│   ├── components/
-│   │   ├── ui/                 # shadcn/ui 组件（源码级）
-│   │   │   ├── button.tsx
-│   │   │   ├── card.tsx
-│   │   │   ├── textarea.tsx
-│   │   │   ├── dialog.tsx
-│   │   │   └── skeleton.tsx
-│   │   ├── mood-selector.tsx       # 5 表情选择器（定制 SVG）
-│   │   ├── journal-input.tsx       # 日记输入框（聊天气泡风格）
-│   │   ├── emotion-chart.tsx       # 7 天波形图（自绘 SVG + Framer Motion）
-│   │   ├── emotion-tooltip.tsx     # 波形图 hover 气泡（独立 HTML 组件，fixed 定位）
-│   │   ├── golden-quote.tsx        # 金句卡片（Aceternity 3D Card）
-│   │   ├── typewriter.tsx          # 打字机效果（Aceternity Text Generate）
-│   │   ├── xiaozhi-bubble.tsx      # 小知回应气泡
-│   │   ├── typing-indicator.tsx    # "小知正在想..." + 跳动圆点
-│   │   ├── empty-state.tsx         # 空状态引导
-│   │   └── capsule-popup.tsx       # 时间胶囊弹窗（shadcn Dialog）
-│   ├── lib/
-│   │   ├── db.ts                   # IndexedDB 初始化 + CRUD
-│   │   ├── ai.ts                   # AI 调用 + system prompt + 本地 fallback
-│   │   ├── seed-data.ts            # 演示数据（3 条预设日记）
-│   │   └── utils.ts                # 工具函数（cn() 等）
-│   ├── store/
-│   │   └── journal.ts              # Zustand store
-│   └── types/
-│       └── index.ts                # Journal, AIResponse, MoodLevel 等
+**状态管理：** Zustand 单 store + Supabase 实时订阅扩展
+```ts
+// 现有 store 增加 Supabase sync
+export const useJournalStore = create<JournalState & JournalActions>((set) => ({
+  // ... 现有状态
+  // 新增：Supabase 实时订阅
+  subscribeToChanges: () => supabase.channel('journals')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'journals' }, (payload) => {
+      // 更新 Zustand store
+    })
+    .subscribe()
+}))
 ```
 
-**状态管理：** 单一 Zustand store（状态少，不需要拆分）
-**波形图：** 自绘 SVG `<polyline>` + Framer Motion 弹性生长动画（非 recharts）
-**波形图 Tooltip：** 独立 HTML 组件 `emotion-tooltip.tsx`，`position: fixed` 定位，通过 `getBoundingClientRect` 映射 SVG viewBox 坐标到屏幕像素，边缘自动 clamp 防止溢出视口
-**响应式策略：** 桌面优先，3 断点（sm:375px, md:768px, lg:1024px），Tailwind 默认断点
+**路由策略：** App Router（文件系统路由），现有模式延续。
+
+**离线优先架构：**
+```
+用户输入 → 写 IndexedDB（本地缓存）→ 标记 sync pending
+                                      ↓
+                              后台同步 Supabase
+                                      ↓
+                              更新 Zustand store
+                                      ↓
+                              组件重渲染
+```
+
+**Bundle 优化：** Next.js 自动代码分割 + Tree shaking，现有配置足够。
 
 ### Infrastructure & Deployment
 
-- 运行方式：`npm run dev` 本地开发
-- 端口：默认 3000
-- 环境变量：`.env.local` + `.env.example`
-- 部署：比赛后考虑 Vercel
+**Web 托管：** Vercel（Next.js 原生支持 + Supabase 集成）
+
+**Supabase 环境：** 开发库 + 生产库分离，两环境起步。
+
+**CI/CD：** Vercel 自动部署（main → production），最简单方案。
+
+**错误监控：** Sentry（免费额度够用），Phase 4 添加。
+
+**扩展策略：** Supabase 自动扩展 + Vercel Serverless，支持 1K→10K DAU 无需架构变更。
 
 ### Decision Impact Analysis
 
 **实现顺序：**
-1. 初始化 Next.js 项目 + 安装依赖
-2. 创建类型定义 + IndexedDB 数据层
-3. 创建 Zustand store
-4. 实现心情选择器 + 日记输入组件
-5. 实现 `/api/journal` Route Handler + AI 调用
-6. 实现情绪波形图组件
-7. 实现金句卡片 + 打字机效果
-8. 添加种子数据 + Fallback 机制
-9. 集成测试 + 视觉打磨
+1. Supabase 项目初始化 + 数据模型 + RLS 策略
+2. Supabase Auth 集成（邮箱登录）
+3. 数据层迁移：IndexedDB → Supabase + 保留 IndexedDB 缓存层
+4. AI 双模式管道：平台 Key 限次 + BYOK 直调
+5. 限次逻辑：ai_usage 表 + 每日计数
+6. 离线同步：本地写 → 后台同步 → 冲突解决
+7. 实时订阅：Supabase channel → Zustand store 更新
+8. 错误处理：Fallback 模式延续
 
 **跨组件依赖：**
-- 心情选择器 → 触发日记输入 → 保存 IndexedDB → 调用 AI API → 更新 store → 波形图刷新
-- AI API 失败 → 触发本地 fallback → 金句卡片仍然显示
-- 种子数据 → 写入 IndexedDB → 波形图立即有内容
+- Supabase Auth → 所有需要用户上下文的组件
+- AI 双模式管道 → 限次逻辑 → BYOK 设置页
+- IndexedDB 缓存层 → Supabase sync → 实时订阅 → Zustand store
+- RLS 策略 → 所有数据查询（确保用户只能访问自己的数据）
 
 ---
 
@@ -307,36 +296,71 @@ xiaozhi-journal/
 
 ### Naming Patterns
 
-**文件命名：** kebab-case — `mood-selector.tsx`, `journal-input.tsx`
+**Database Naming（Supabase PostgreSQL）：**
 
-**组件命名：** PascalCase（导出名）— `export function MoodSelector()`
+| 维度 | 约定 | 示例 |
+|------|------|------|
+| 表名 | `snake_case`（复数）| `profiles`, `ai_usage`, `user_api_keys` |
+| 列名 | `snake_case` | `user_id`, `created_at`, `mood_label` |
+| 外键 | `{table}_id` | `user_id`（指向 profiles.id）|
+| 索引 | `idx_{table}_{column}` | `idx_journals_user_id` |
+| 策略 | `{table}_{action}_{condition}` | `journals_select_own`, `journals_insert_auth` |
 
-**函数命名：** camelCase — `fetchJournals()`, `addJournal()`
+**API Naming：**
 
-**变量命名：** camelCase — `userId`, `goldenQuote`
+| 维度 | 约定 | 示例 |
+|------|------|------|
+| REST 端点 | 复数名词，kebab-case | `/api/journals`, `/api/ai/usage` |
+| 路由参数 | camelCase | `/api/journal/:id` |
+| 查询参数 | camelCase | `?userId=xxx&limit=20` |
 
-**API 路由：** kebab-case（文件夹）— `api/journal/route.ts`
+**Code Naming：**
 
-**IndexedDB store：** camelCase（复数）— `journals`, `appMeta`
+| 维度 | 约定 | 示例 |
+|------|------|------|
+| 组件文件 | kebab-case | `mood-selector.tsx`, `journal-input.tsx` |
+| 组件导出 | PascalCase | `export function MoodSelector()` |
+| 函数 | camelCase | `fetchJournals()`, `syncToSupabase()` |
+| 变量 | camelCase | `userId`, `goldenQuote` |
+| lib 文件 | camelCase | `supabase.ts`, `encryption.ts` |
+
+**JSON 字段映射：**
+
+| 层 | 字段格式 | 说明 |
+|---|---------|------|
+| Supabase（DB 层） | `snake_case` | `golden_quote`, `mood_label` |
+| API（传输层） | `camelCase` | `goldenQuote`, `moodLabel` |
+| 前端（应用层） | `camelCase` | `goldenQuote`, `moodLabel` |
 
 ### Format Patterns
 
-**JSON 字段：** 统一 camelCase
+**JSON 字段：** 前端统一 `camelCase`
 
 **日期格式：** ISO 8601 字符串 — `new Date().toISOString()`
 
 **布尔值：** `true` / `false`
 
-**错误响应：** `{ error: string, fromFallback: boolean }` — 不走 HTTP error code
+**API 响应格式：**
+
+| 场景 | 格式 | 示例 |
+|------|------|------|
+| AI 成功 | `{ response, goldenQuote, moodLabel, fromFallback: false }` | 直接返回 |
+| AI 降级 | `{ response, goldenQuote, moodLabel: "本地", fromFallback: true }` | 200 + fallback |
+| 分页查询 | `{ data: [], meta: { page, total, hasMore } }` | 列表查询 |
+| 通用错误 | `{ error: string }` | 非 AI 错误场景 |
+
+**错误处理：**
+- AI 失败 → 返回 200 + `fromFallback: true`，不走 HTTP error
+- 其他错误 → 使用标准 HTTP status（400, 401, 500）+ `{ error: string }`
 
 ### State Management Patterns
 
 | 约定 | 说明 |
 |------|------|
-| 更新方式 | Immer 风格不可变更新：`set(state => ({ ...state, journals: [...state.journals, new] }))` |
-| Loading 命名 | `loading`（全局）、`saving`（单条） |
+| 更新方式 | 不可变更新：`set(state => ({ ...state, journals: [...state.journals, new] }))` |
+| Loading 命名 | `loading`（全局加载）、`saving`（单条保存）、`aiWaiting`（等待 AI）|
 | 错误存储 | `error: string \| null` |
-| Source of Truth | IndexedDB → 页面加载时从 DB 读 → store 作为运行时状态 |
+| Source of Truth | Supabase → IndexedDB 缓存 → Zustand store → 组件渲染 |
 
 ### Error Handling Patterns
 
@@ -344,6 +368,7 @@ xiaozhi-journal/
 |------|----------|
 | AI API 失败 | 返回 200 + `fromFallback: true`，不走 HTTP error |
 | 网络断开 | 日记先写 IndexedDB，标记 `pending`，不报错 |
+| 认证失败 | 重定向到登录页 |
 | 组件级错误 | `error` state + 用户可见的中文提示 |
 | 控制台日志 | 开发环境 `console.error`，生产环境静默 |
 
@@ -351,33 +376,24 @@ xiaozhi-journal/
 
 | 场景 | 表现 |
 |------|------|
-| AI 等待 | 打字机动画 + "小知正在想..." + 3 个跳动圆点（Aceternity Text Generate） |
-| 数据加载 | 骨架屏浅米色 `#F5EDE4` 闪烁（shadcn Skeleton） |
+| AI 等待 | 打字机动画 + "小知正在想..." + 3 个跳动圆点 |
+| 数据加载 | 骨架屏浅米色 `#F5EDE4` 闪烁（shadcn Skeleton）|
 | 保存中 | 按钮变 disabled + 涟漪反馈 + loading 文案 |
-| 页面过渡 | 淡入淡出 0.3s（Framer Motion） |
-
-### Motion & Animation Patterns
-
-| 动效 | 实现 | 参数 |
-|------|------|------|
-| 表情点击回弹 | Framer Motion `spring` | scale(1.3) → 回弹 |
-| 输入框滑入 | Framer Motion `spring` | 从下方弹性滑入 |
-| 打字机揭示 | Aceternity Text Generate | ~50ms/字 |
-| 金句翻转 | Aceternity 3D Card + CSS 3D transform | 0.6s |
-| 波形生长 | Framer Motion `animate` | 0.8s 入场，新数据点弹性弹跳 |
-| 弹窗出现 | Framer Motion `scale 0.9 → 1.0` | 0.3s cubic-bezier |
-| 空状态浮动 | CSS `@keyframes` | 2s 循环微浮动 |
-| 尊重无障碍 | `prefers-reduced-motion` | 关闭动画时直接显示 |
+| 同步中 | 静默后台同步，不阻塞用户操作 |
+| 页面过渡 | 淡入淡出 0.3s（Framer Motion）|
 
 ### Enforcement Guidelines
 
 **所有实现 MUST：**
 
+- 数据库表名/列名使用 `snake_case`
+- 前端 JSON 字段使用 `camelCase`
 - 文件命名使用 kebab-case
-- JSON 字段使用 camelCase
+- API 端点使用复数名词
 - 日期使用 ISO 8601 字符串
 - 错误通过 `error` state 展示给用户，不抛异常阻断
 - AI 调用失败返回 200 + `fromFallback: true`
+- Zustand state 使用不可变更新
 
 **Good Examples:**
 ```ts
@@ -395,8 +411,11 @@ return Response.json({ response: fallbackQuote, goldenQuote: fallbackQuote, mood
 // ❌ 直接 mutation
 state.journals.push(journal)
 
-// ❌ 暴露 HTTP error 给前端
+// ❌ 暴露 HTTP error 给前端（AI 场景）
 throw new Error('API failed')
+
+// ❌ 数据库列名用 camelCase
+CREATE TABLE journals (userId text) -- 应为 user_id
 ```
 
 ---
@@ -406,73 +425,103 @@ throw new Error('API failed')
 ### Complete Project Directory Structure
 
 ```
-xiaozhi-journal/
+xiaozhi-journal/                           # Phase 1-2 单一项目（Phase 3 迁移为 Monorepo）
 ├── README.md
-├── package.json
-├── next.config.ts
-├── tailwind.config.ts          # 暖日色板 + 圆角 + 阴影 Token
-├── tsconfig.json
-├── .env.local                  # 实际 API Key（不提交）
-├── .env.example                # 模板：DASHSCOPE_API_KEY=sk-xxx
+├── package.json                           # 新增：@supabase/supabase-js, crypto-js 等
+├── next.config.ts                         # 现有
+├── tailwind.config.ts                     # 现有：暖日色板 + 圆角
+├── tsconfig.json                          # 现有
+├── middleware.ts                          # 新增：路由鉴权中间件
+├── .env.local                             # 现有 + 新增 Supabase 变量
+├── .env.example                           # 更新：增加 Supabase 环境变量
 ├── .gitignore
-├── components.json             # shadcn/ui 配置
+├── components.json                        # shadcn/ui 配置
+├── supabase/                              # 新增：Supabase 相关
+│   ├── migrations/                        # 数据库迁移脚本
+│   │   ├── 001_create_profiles.sql
+│   │   ├── 002_create_journals.sql
+│   │   ├── 003_create_ai_usage.sql
+│   │   ├── 004_create_user_api_keys.sql
+│   │   ├── 005_create_subscriptions.sql
+│   │   └── 006_create_app_meta.sql
+│   ├── seed.sql                          # 种子数据
+│   └── config.toml                       # Supabase CLI 配置
 ├── public/
 │   └── favicon.ico
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx          # 根布局 + Google Fonts (Noto Serif/Sans SC)
-│   │   ├── page.tsx            # 首页（波形图 + 心情 + 输入 + AI 回应）
-│   │   ├── globals.css         # Tailwind + CSS 变量（色板/圆角/阴影）
+│   │   ├── layout.tsx                    # 现有：根布局 + Google Fonts
+│   │   ├── page.tsx                      # 修改：增加登录态检查 + Onboarding
+│   │   ├── globals.css                   # 现有：Tailwind + CSS 变量
+│   │   ├── auth/                         # 新增：认证相关页面
+│   │   │   ├── login/page.tsx            # 邮箱登录/注册页
+│   │   │   └── callback/page.tsx         # Supabase Auth 回调
+│   │   ├── settings/                     # 新增：用户设置
+│   │   │   └── page.tsx                  # BYOK 配置、额度查看、订阅管理
+│   │   ├── paywall/                      # 新增：付费墙
+│   │   │   └── page.tsx                  # 免费版 vs 付费版权益对比 + 支付
+│   │   ├── history/                      # 现有
+│   │   │   ├── page.tsx                  # 历史日记列表（分页）
+│   │   │   └── [id]/page.tsx             # 单条日记详情
 │   │   └── api/
-│   │       └── journal/
-│   │           └── route.ts    # POST: AI 代理
+│   │       ├── auth/                     # 新增：认证 API
+│   │       │   └── login/route.ts        # 邮箱登录/注册
+│   │       ├── journal/                  # 修改：增加用户鉴权
+│   │       │   ├── route.ts              # POST: 保存日记 + AI（双模式）
+│   │       │   └── [id]/route.ts         # GET: 获取单条日记
+│   │       ├── journals/route.ts         # 新增：GET 分页获取日记列表
+│   │       ├── ai/
+│   │       │   └── usage/route.ts        # 新增：GET 当日 AI 使用量
+│   │       └── sync/route.ts             # 新增：POST 本地缓存同步
 │   ├── components/
-│   │   ├── ui/                 # shadcn/ui 源码级组件
+│   │   ├── ui/                           # shadcn/ui 源码级组件（现有）
 │   │   │   ├── button.tsx
 │   │   │   ├── card.tsx
 │   │   │   ├── textarea.tsx
 │   │   │   ├── dialog.tsx
 │   │   │   └── skeleton.tsx
-│   │   ├── mood-selector.tsx       # 5 表情（定制 SVG，非标准 emoji）
-│   │   ├── journal-input.tsx       # 输入框（聊天气泡风格，底部 2px 线）
-│   │   ├── emotion-chart.tsx       # 波形图（自绘 SVG + Framer Motion）
-│   │   ├── emotion-tooltip.tsx     # 波形图 hover 气泡（独立 HTML 组件，fixed 定位）
-│   │   ├── golden-quote.tsx        # 金句卡片（Aceternity 3D Card + 翻转）
-│   │   ├── typewriter.tsx          # 打字机（Aceternity Text Generate）
-│   │   ├── xiaozhi-bubble.tsx      # 小知回应气泡（左侧对齐，带气泡尾）
-│   │   ├── typing-indicator.tsx    # "小知正在想..." + 3 个跳动圆点
-│   │   ├── empty-state.tsx         # 空状态引导（插画 + 温柔文案）
-│   │   └── capsule-popup.tsx       # 时间胶囊弹窗（shadcn Dialog）
+│   │   ├── mood-selector.tsx             # 现有：5 表情选择器
+│   │   ├── journal-input.tsx             # 现有：日记输入框
+│   │   ├── emotion-chart.tsx             # 现有：波形图（95% 复用）
+│   │   ├── emotion-tooltip.tsx           # 现有：波形图 hover 气泡
+│   │   ├── golden-quote.tsx              # 现有：金句卡片（95% 复用）
+│   │   ├── typewriter.tsx                # 现有：打字机效果
+│   │   ├── xiaozhi-bubble.tsx            # 现有：小知回应气泡
+│   │   ├── typing-indicator.tsx          # 现有："小知正在想..."
+│   │   ├── empty-state.tsx               # 现有：空状态引导
+│   │   ├── capsule-popup.tsx             # 现有：时间胶囊弹窗
+│   │   └── share-card.tsx               # 现有：分享卡片
 │   ├── lib/
-│   │   ├── db.ts                 # IndexedDB 初始化 + CRUD
-│   │   ├── ai.ts                 # AI 调用 + system prompt + fallback 金句库
-│   │   ├── seed-data.ts          # 演示数据（3 条预设日记）
-│   │   └── utils.ts              # cn() 等工具函数
+│   │   ├── db.ts                         # 修改：IndexedDB 缓存层 + Supabase sync
+│   │   ├── supabase.ts                   # 新增：Supabase 客户端初始化
+│   │   ├── ai.ts                         # 修改：支持双模式（平台 Key + BYOK）
+│   │   ├── auth.ts                       # 新增：认证工具函数
+│   │   ├── encryption.ts                 # 新增：AES-256-GCM 加密/解密
+│   │   ├── billing.ts                    # 新增：额度管理 + 计费逻辑
+│   │   ├── seed-data.ts                  # 现有：演示数据
+│   │   ├── share-card-renderer.ts        # 现有：Canvas 分享卡片生成
+│   │   ├── time-capsule.ts               # 现有：时间胶囊匹配逻辑
+│   │   └── utils.ts                      # 现有：cn() 等工具函数
 │   ├── store/
-│   │   └── journal.ts            # Zustand store
-│   └── types/
-│       └── index.ts              # Journal, AIResponse, MoodLevel 等
+│   │   └── journal.ts                    # 修改：增加 Supabase 实时订阅
+│   ├── types/
+│   │   └── index.ts                      # 修改：增加 User, Subscription, AIUsage
+│   └── middleware.ts                      # 新增：Next.js 路由鉴权（同根目录或 src/）
+├── docs/
+│   └── project-context.md                # AI Agent 规则文档
+└── _bmad-output/                         # BMad 输出
+    ├── planning-artifacts/
+    └── implementation-artifacts/
 ```
-
-**UX 审阅后变更：**
-
-| 变更 | 之前 | 之后 | 原因 |
-|------|------|------|------|
-| 波形图 | recharts LineChart | 自绘 SVG + Framer Motion | UX 要求有机生长动画，recharts 不灵活 |
-| 基础组件 | 无 | shadcn/ui | UX 要求 Button/Card/Textarea/Dialog/Skeleton |
-| 动效 | 内联 CSS | Framer Motion + Aceternity UI | UX 要求弹簧动画、3D 翻转、打字机 |
-| 字体 | 系统默认 | Noto Serif SC + Noto Sans SC | UX 杂志风格，文学感标题 |
-| 新增组件 | 5 个 | 9 个 | xiaozhi-bubble, typing-indicator, empty-state, ui/* |
-| 新增组件（后续） | 9 个 | 10 个 | emotion-tooltip（独立 HTML 组件，fixed 定位） |
-| 配置文件 | 无 | components.json | shadcn/ui 需要 |
-| 工具函数 | 无 | lib/utils.ts | cn() 合并 Tailwind class |
 
 ### Architectural Boundaries
 
 **API Boundaries:**
-- 唯一端点：`POST /api/journal`
-- 纯代理模式，无认证，无业务逻辑
-- 请求体：`{ content, mood }` → 响应体：`{ response, goldenQuote, moodLabel, fromFallback }`
+- `/api/auth/*` — 认证相关，需要 Supabase Auth
+- `/api/journal` (POST) — 需要用户鉴权 + AI 限次/BYOK 检查
+- `/api/journals` (GET) — 需要用户鉴权 + 分页
+- `/api/ai/usage` (GET) — 需要用户鉴权
+- `/api/sync` (POST) — 需要用户鉴权 + 批量写入
 
 **Component Boundaries:**
 - 所有组件通过 Zustand store 通信
@@ -480,48 +529,61 @@ xiaozhi-journal/
 - 组件职责单一：每个组件只做一件事
 
 **Service Boundaries:**
-- `lib/db.ts`：唯一 IndexedDB 操作入口
-- `lib/ai.ts`：唯一 AI 调用入口（含 fallback）
-- `store/journal.ts`：唯一状态管理入口
+- `lib/supabase.ts` — 唯一 Supabase 客户端入口
+- `lib/db.ts` — 唯一 IndexedDB 操作入口（缓存层）
+- `lib/ai.ts` — 唯一 AI 调用入口（双模式）
+- `lib/auth.ts` — 唯一认证工具函数入口
+- `lib/encryption.ts` — 唯一加密/解密入口
+- `lib/billing.ts` — 唯一额度管理入口
+- `store/journal.ts` — 唯一状态管理入口
 
 **Data Boundaries:**
-- IndexedDB 是唯一数据源（`journals` + `appMeta` 两表）
-- 无后端数据库，无缓存层
-- 数据流向：用户输入 → IndexedDB → store → 组件渲染
+- Supabase 是云端唯一数据源（6 张表）
+- IndexedDB 是本地缓存层（journals + appMeta 两表）
+- 数据流向：用户输入 → IndexedDB → Supabase sync → store → 组件渲染
 
 ### Requirements to Structure Mapping
 
 | 需求 | 实现位置 |
 |------|----------|
-| FR1-F2: 心情打卡 + 日记输入 | `components/mood-selector.tsx` + `components/journal-input.tsx` |
-| FR3-F4: 保存 + 历史查看 | `lib/db.ts` + `store/journal.ts` |
-| FR6-F7: AI 回应 + 金句 | `app/api/journal/route.ts` + `lib/ai.ts` |
-| FR10-F11: 情绪波形图 | `components/emotion-chart.tsx` |
-| FR13-F14: 时间胶囊 | `components/capsule-popup.tsx` |
-| FR15-F17: 数据管理 + 种子 | `lib/db.ts` + `lib/seed-data.ts` |
-| FR18: 金句分享 | `components/golden-quote.tsx` |
+| FR1-FR4: 用户认证 | `app/auth/login/page.tsx` + `lib/auth.ts` + `middleware.ts` |
+| FR5-FR9: 日记记录 | `components/mood-selector.tsx` + `journal-input.tsx` + `lib/db.ts` |
+| FR10-FR14: AI 互动 | `app/api/journal/route.ts` + `lib/ai.ts` |
+| FR15-FR19: AI 额度管理 | `lib/billing.ts` + `app/api/ai/usage/route.ts` |
+| FR20-FR22: 情绪可视化 | `components/emotion-chart.tsx` |
+| FR23-FR25: 时间胶囊 | `lib/time-capsule.ts` + `components/capsule-popup.tsx` |
+| FR26-FR30: 数据管理 | `lib/db.ts` + `lib/supabase.ts` + `app/api/sync/route.ts` |
+| FR31-FR32: 分享 | `components/golden-quote.tsx` + `share-card.tsx` |
+| FR33-FR35: 付费订阅 | `app/paywall/page.tsx` + `app/settings/page.tsx` |
 
 ### Integration Points
 
 **Internal Communication:**
 ```
-用户 → MoodSelector → JournalInput → lib/db.ts (IndexedDB)
-                                          ↓
-                                  store/journal.ts
-                                          ↓
-                              app/api/journal/route.ts → 阿里云百炼
-                                          ↓
-                                  lib/ai.ts (fallback)
-                                          ↓
-                              EmotionChart (读取 store 渲染)
+用户 → 登录/注册 → Supabase Auth → JWT Token
+                                      ↓
+                          Zustand store (用户上下文)
+                                      ↓
+用户 → MoodSelector → JournalInput → lib/db.ts (IndexedDB 缓存)
+                                      ↓
+                              lib/supabase.ts (云端同步)
+                                      ↓
+                              app/api/journal/route.ts → AI 调用
+                                      ↓
+                              lib/ai.ts (平台 Key / BYOK)
+                                      ↓
+                              Zustand store 更新 → 组件重渲染
 ```
 
 **External Integrations:**
+- Supabase（PostgreSQL + Auth + Realtime）— 通过 `@supabase/supabase-js` SDK
 - 阿里云百炼 API（OpenAI 兼容接口）— 通过 `/api/journal` 代理
+- 微信支付/支付宝（Phase 2）— 通过支付 API 端点
 
 **Data Flow:**
-- 写入：用户输入 → `lib/db.ts` → IndexedDB → `store/journal.ts` → 组件重渲染
-- 读取：页面加载 → `store/journal.ts` → `lib/db.ts` → IndexedDB → 组件渲染
+- 写入：用户输入 → `lib/db.ts` (IndexedDB) → `lib/supabase.ts` (Supabase) → `store/journal.ts` → 组件渲染
+- 读取：页面加载 → `lib/supabase.ts` (Supabase) → `store/journal.ts` → 组件渲染
+- 离线：用户输入 → `lib/db.ts` (IndexedDB) → 标记 pending → 网络恢复 → `app/api/sync/route.ts` → Supabase
 
 ### File Organization Patterns
 
@@ -529,115 +591,4 @@ xiaozhi-journal/
 **Source Organization:** `src/` 下按职责分组（`app/`, `components/`, `lib/`, `store/`, `types/`）
 **Test Organization:** 本项目不写单元测试，手动验证
 **Asset Organization:** `public/` 存放静态资源
-
----
-
-## Architecture Validation Results
-
-### Coherence Validation ✅
-
-**Decision Compatibility:** 所有技术栈无冲突 — Next.js App Router + TypeScript + TailwindCSS + Zustand + idb + Framer Motion + shadcn/ui + Aceternity UI，全部兼容
-
-**Pattern Consistency:** 命名规范统一（kebab-case 文件、camelCase JSON、PascalCase 组件），所有组件通过 Zustand store 通信，动效统一使用 Framer Motion
-
-**Structure Alignment:** 目录结构支持所有架构决策和 UX 组件需求，`lib/` 为唯一服务入口，`store/` 为唯一状态入口，`components/ui/` 为 shadcn 基础组件
-
-### Requirements Coverage Validation ✅
-
-**Functional Requirements:**
-
-| FR 类别 | 架构支持 | 状态 |
-|---------|----------|------|
-| FR1-F5 日记记录 | `mood-selector.tsx` + `journal-input.tsx` + `db.ts` | ✅ |
-| FR6-F9 AI 互动 | `route.ts` + `ai.ts` + fallback | ✅ |
-| FR10-F12 情绪可视化 | `emotion-chart.tsx`（自绘 SVG + Framer Motion） | ✅ |
-| FR13-F14 时间胶囊 | `capsule-popup.tsx` | ✅ |
-| FR15-F17 数据管理 | `db.ts` + `seed-data.ts` | ✅ |
-| FR18 金句分享 | `golden-quote.tsx` | ✅ |
-
-**Non-Functional Requirements:**
-
-| NFR | 架构支持 | 状态 |
-|-----|----------|------|
-| NFR1-3 性能 | 首屏最小化、打字机掩盖等待 | ✅ |
-| NFR5-7 安全 | `.env.local` + Route Handler 代理 | ✅ |
-| NFR8-9 降级 | Fallback 金句 + IndexedDB pending | ✅ |
-
-### Implementation Readiness Validation ✅
-
-- ✅ 所有关键决策已记录
-- ✅ 命名规范完整且一致
-- ✅ Good/Bad 代码示例已提供
-- ✅ 数据流清晰定义
-
-### Gap Analysis Results
-
-| 级别 | 项目 | 说明 |
-|------|------|------|
-| 重要 | AI Prompt 未详细定义 | `lib/ai.ts` 中的 system prompt 需要在实现时精确定义 |
-| 可选 | 无测试策略 | 本项目手动验证 |
-| 可选 | 无 CI/CD | 本地开发，不需要 |
-
-### Architecture Completeness Checklist
-
-- [x] 项目上下文分析
-- [x] Starter 模板评估
-- [x] 核心架构决策（数据、安全、API、前端、基础设施）
-- [x] 实现模式与一致性规则
-- [x] 完整项目目录结构
-- [x] 需求到结构映射
-- [x] 数据流定义
-
-### Architecture Readiness Assessment
-
-**Overall Status:** READY FOR IMPLEMENTATION
-
-**Confidence Level:** 高
-
-**Key Strengths:**
-- 技术栈极简，决策明确
-- 数据流单向清晰
-- 所有 FR/NFR 都有架构支持
-- 实现模式已定义
-
-**Areas for Future Enhancement:**
-- AI Prompt 精细化（实现时定义）
-- P2 功能（语音输入、主题皮肤）的架构预留
-
-### Implementation Handoff
-
-**AI Agent Guidelines:**
-
-- 严格遵循架构文档中的所有决策
-- 使用实现模式保持一致性
-- 尊重项目结构和边界
-- 所有架构问题参考此文档
-
-**First Implementation Priority:**
-
-```bash
-npx create-next-app@latest xiaozhi-journal \
-  --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"
-```
-
-安装额外依赖：
-```bash
-npm i zustand idb framer-motion
-npx shadcn@latest init
-npx shadcn@latest add button card textarea dialog skeleton
-```
-
-然后按顺序实现：
-1. 配置 Tailwind 暖日色板 + 圆角 + 阴影 Token
-2. 加载 Google Fonts（Noto Serif SC + Noto Sans SC）
-3. 创建类型定义 (`types/index.ts`)
-4. 创建 IndexedDB 数据层 (`lib/db.ts`)
-5. 创建 Zustand store (`store/journal.ts`)
-6. 安装并配置 shadcn/ui 组件
-7. 实现心情选择器 + 日记输入组件
-8. 实现 `/api/journal` Route Handler + AI 调用 + system prompt
-9. 实现情绪波形图组件（自绘 SVG + Framer Motion）+ hover tooltip（独立 HTML 组件）
-10. 实现金句卡片（Aceternity 3D Card）+ 打字机效果
-11. 实现小知气泡 + 打字机指示器 + 空状态
-12. 添加种子数据 + Fallback 机制
-13. 响应式适配 + 视觉打磨 + tooltip 边界 clamp 验证
+**Migration Organization:** `supabase/migrations/` 按序号前缀排序

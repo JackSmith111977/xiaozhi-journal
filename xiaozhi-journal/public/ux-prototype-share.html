@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>金句分享 — UX 原型预览</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #FDF8F5;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: #3D3D3D;
+    min-height: 100vh;
+  }
+
+  .header {
+    text-align: center;
+    padding: 32px 16px 16px;
+  }
+  .header h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 24px;
+    color: #3D3D3D;
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 14px;
+    color: #8A817C;
+  }
+
+  .prototypes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+
+  .proto-card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  }
+  .proto-label {
+    display: inline-block;
+    background: #F5EDE4;
+    color: #D4856A;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .proto-desc {
+    font-size: 13px;
+    color: #8A817C;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  /* Phone mockup */
+  .phone {
+    background: #FDF8F5;
+    border-radius: 16px;
+    border: 1px solid #E8E0D8;
+    overflow: hidden;
+    position: relative;
+    min-height: 520px;
+  }
+  .phone-content {
+    padding: 24px 16px;
+  }
+
+  /* Golden Quote Card */
+  .quote-card {
+    background: #F5EDE4;
+    border-radius: 24px;
+    padding: 24px 20px;
+    position: relative;
+    border-left: 3px solid #D4856A;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .share-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8A817C;
+    transition: background 0.2s;
+  }
+  .share-btn:hover {
+    background: #E8E0D8;
+  }
+  .quote-text {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 18px;
+    font-style: italic;
+    line-height: 1.8;
+    color: #3D3D3D;
+    padding-right: 24px;
+  }
+  .quote-date {
+    font-size: 12px;
+    color: #8A817C;
+    text-align: right;
+    margin-top: 12px;
+  }
+
+  /* Overlay */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    display: none;
+    z-index: 10;
+  }
+  .overlay.active { display: block; }
+
+  /* ========== Option A: Bottom Sheet ========== */
+  .bottom-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 24px 24px 0 0;
+    padding: 20px;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 20;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+  .bottom-sheet.active {
+    transform: translateY(0);
+  }
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: #D4C5B9;
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .sheet-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .sheet-preview {
+    background: #F5EDE4;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border-left: 3px solid #D4856A;
+  }
+  .sheet-preview .preview-quote {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px;
+    font-style: italic;
+    color: #3D3D3D;
+    line-height: 1.7;
+  }
+  .sheet-preview .preview-watermark {
+    font-size: 11px;
+    color: #8A817C;
+    text-align: right;
+    margin-top: 12px;
+  }
+  .sheet-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sheet-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 15px;
+    color: #3D3D3D;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: background 0.15s;
+  }
+  .sheet-action-btn:hover {
+    background: #F5EDE4;
+  }
+  .sheet-action-btn .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #F5EDE4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .sheet-action-btn .label-sub {
+    font-size: 12px;
+    color: #8A817C;
+  }
+  .sheet-cancel {
+    margin-top: 8px;
+    text-align: center;
+  }
+  .sheet-cancel button {
+    padding: 12px 32px;
+    border: none;
+    background: transparent;
+    color: #8A817C;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+
+  /* ========== Option B: Card Flip ========== */
+  .flip-container {
+    perspective: 1000px;
+    margin-top: 8px;
+  }
+  .flip-card {
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+    position: relative;
+    min-height: 200px;
+  }
+  .flip-card.flipped {
+    transform: rotateY(180deg);
+  }
+  .flip-front, .flip-back {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .flip-back {
+    position: absolute;
+    inset: 0;
+    transform: rotateY(180deg);
+    background: white;
+    border-radius: 24px;
+    padding: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .flip-back-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .flip-back-header span {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #8A817C;
+  }
+  .back-btn {
+    background: none;
+    border: none;
+    color: #D4856A;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'Noto Sans SC', sans-serif;
+    padding: 4px 8px;
+  }
+  .flip-preview-img {
+    background: #F5EDE4;
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 3px solid #D4856A;
+    margin-bottom: 16px;
+  }
+  .flip-preview-img .preview-quote {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 15px;
+    font-style: italic;
+    color: #3D3D3D;
+    line-height: 1.7;
+  }
+  .flip-preview-img .preview-watermark {
+    font-size: 11px;
+    color: #8A817C;
+    text-align: right;
+    margin-top: 10px;
+  }
+  .flip-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .flip-action-btn {
+    flex: 1;
+    padding: 10px 8px;
+    border: 1px solid #E8E0D8;
+    background: white;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #3D3D3D;
+    font-family: 'Noto Sans SC', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s;
+  }
+  .flip-action-btn:hover {
+    background: #F5EDE4;
+    border-color: #D4856A;
+  }
+  .flip-action-btn .mini-icon {
+    font-size: 20px;
+  }
+
+  /* ========== Option C: Popover ========== */
+  .popover-anchor {
+    position: relative;
+    display: inline-block;
+  }
+  .popover-menu {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    padding: 8px;
+    min-width: 180px;
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+    transition: all 0.2s ease;
+    z-index: 30;
+  }
+  .popover-menu.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .popover-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: none;
+    background: none;
+    width: 100%;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #3D3D3D;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: background 0.15s;
+  }
+  .popover-item:hover {
+    background: #F5EDE4;
+  }
+  .popover-item .p-icon {
+    font-size: 16px;
+  }
+
+  /* C: Preview reveal */
+  .c-preview {
+    position: absolute;
+    top: 16px;
+    right: 56px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    padding: 16px;
+    width: 260px;
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 30;
+  }
+  .c-preview.active {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+  .c-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .c-preview-header span {
+    font-size: 13px;
+    color: #D4856A;
+    font-weight: 500;
+  }
+  .c-preview-close {
+    background: none;
+    border: none;
+    color: #8A817C;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 4px;
+  }
+  .c-preview-img {
+    background: #F5EDE4;
+    border-radius: 12px;
+    padding: 16px;
+    border-left: 3px solid #D4856A;
+  }
+  .c-preview-img .preview-quote {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 14px;
+    font-style: italic;
+    color: #3D3D3D;
+    line-height: 1.7;
+  }
+  .c-preview-img .preview-watermark {
+    font-size: 10px;
+    color: #8A817C;
+    text-align: right;
+    margin-top: 8px;
+  }
+
+  /* Toast feedback */
+  .toast {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #3D3D3D;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 24px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 50;
+    pointer-events: none;
+  }
+  .toast.active {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .note {
+    font-size: 12px;
+    color: #C8AB94;
+    margin-top: 12px;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>金句分享 — UX 原型预览</h1>
+  <p>点击每个方案中的分享按钮（↑）查看交互效果</p>
+</div>
+
+<div class="prototypes-grid">
+
+  <!-- ==================== OPTION A ==================== -->
+  <div class="proto-card">
+    <div class="proto-label">方案 A</div>
+    <div class="proto-desc">底部面板：图片预览 + 操作选项，用户先看再选</div>
+    <div class="phone" id="phoneA">
+      <div class="phone-content">
+        <p style="font-size:12px;color:#8A817C;letter-spacing:0.1em;margin-bottom:16px;">2026年4月15日 星期三</p>
+        <div class="quote-card">
+          <button class="share-btn" onclick="openSheetA()" aria-label="分享金句">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <polyline points="16 6 12 2 8 6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+          </button>
+          <p class="quote-text">"第 3 版不是失败，是第 3 次不肯妥协的自己。"</p>
+          <p class="quote-date">2026/4/12</p>
+        </div>
+        <div style="margin-top:16px;text-align:center;">
+          <p style="font-size:13px;color:#8A817C;">小知："改了 3 遍还在改，说明你没放弃自己。"</p>
+        </div>
+      </div>
+
+      <div class="overlay" id="overlayA" onclick="closeSheetA()"></div>
+
+      <div class="bottom-sheet" id="sheetA">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">分享金句</div>
+        <div class="sheet-preview">
+          <p class="preview-quote">"第 3 版不是失败，是第 3 次不肯妥协的自己。"</p>
+          <p class="preview-watermark">— Xiaozhi Journal · 2026年4月12日</p>
+        </div>
+        <div class="sheet-actions">
+          <button class="sheet-action-btn" onclick="doAction('复制图片到剪贴板', 'A')">
+            <div class="icon">📋</div>
+            <div>
+              <div>复制图片</div>
+              <div class="label-sub">到剪贴板，可粘贴到微信</div>
+            </div>
+          </button>
+          <button class="sheet-action-btn" onclick="doAction('图片已保存', 'A')">
+            <div class="icon">💾</div>
+            <div>
+              <div>保存图片</div>
+              <div class="label-sub">下载 PNG 到本地</div>
+            </div>
+          </button>
+          <button class="sheet-action-btn" onclick="doAction('文字已复制', 'A')">
+            <div class="icon">📝</div>
+            <div>
+              <div>复制文字</div>
+              <div class="label-sub">仅复制金句文本</div>
+            </div>
+          </button>
+        </div>
+        <div class="sheet-cancel">
+          <button onclick="closeSheetA()">取消</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toastA"></div>
+    </div>
+    <p class="note">移动端适配自然，预览区域大，扩展性强</p>
+  </div>
+
+  <!-- ==================== OPTION B ==================== -->
+  <div class="proto-card">
+    <div class="proto-label">方案 B</div>
+    <div class="proto-desc">卡片翻转：原地 3D 翻转显示预览 + 按钮，不打断阅读流</div>
+    <div class="phone" id="phoneB">
+      <div class="phone-content">
+        <p style="font-size:12px;color:#8A817C;letter-spacing:0.1em;margin-bottom:16px;">2026年4月15日 星期三</p>
+
+        <div class="flip-container">
+          <div class="flip-card" id="flipCardB">
+            <div class="flip-front">
+              <div class="quote-card" style="min-height:160px;">
+                <button class="share-btn" onclick="flipCard()" aria-label="分享金句">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                    <polyline points="16 6 12 2 8 6"/>
+                    <line x1="12" y1="2" x2="12" y2="15"/>
+                  </svg>
+                </button>
+                <p class="quote-text">"允许自己什么都不做，本身就是一种勇敢。"</p>
+                <p class="quote-date">2026/4/15</p>
+              </div>
+            </div>
+            <div class="flip-back">
+              <div class="flip-back-header">
+                <span>分享金句</span>
+                <button class="back-btn" onclick="unflipCard()">← 返回</button>
+              </div>
+              <div class="flip-preview-img">
+                <p class="preview-quote">"允许自己什么都不做，本身就是一种勇敢。"</p>
+                <p class="preview-watermark">— Xiaozhi Journal · 2026年4月15日</p>
+              </div>
+              <div class="flip-actions">
+                <button class="flip-action-btn" onclick="doAction('已复制', 'B')">
+                  <span class="mini-icon">📋</span>
+                  复制
+                </button>
+                <button class="flip-action-btn" onclick="doAction('已保存', 'B')">
+                  <span class="mini-icon">💾</span>
+                  保存
+                </button>
+                <button class="flip-action-btn" onclick="doAction('文字已复制', 'B')">
+                  <span class="mini-icon">📝</span>
+                  文字
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;text-align:center;">
+          <p style="font-size:13px;color:#8A817C;">小知："周末嘛，就该浪费在美好的无聊上。"</p>
+        </div>
+      </div>
+
+      <div class="toast" id="toastB"></div>
+    </div>
+    <p class="note">利用现有翻转动画，不打断阅读流，小屏预览区域受限</p>
+  </div>
+
+  <!-- ==================== OPTION C ==================== -->
+  <div class="proto-card">
+    <div class="proto-label">方案 C</div>
+    <div class="proto-desc">渐进式 Popover：先选操作，后展开预览确认</div>
+    <div class="phone" id="phoneC">
+      <div class="phone-content">
+        <p style="font-size:12px;color:#8A817C;letter-spacing:0.1em;margin-bottom:16px;">2026年4月15日 星期三</p>
+        <div class="quote-card" style="position:relative;">
+          <div class="popover-anchor">
+            <button class="share-btn" id="shareBtnC" onclick="togglePopoverC()" aria-label="分享金句">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                <polyline points="16 6 12 2 8 6"/>
+                <line x1="12" y1="2" x2="12" y2="15"/>
+              </svg>
+            </button>
+
+            <div class="popover-menu" id="popoverC">
+              <button class="popover-item" onclick="doActionC('复制图片', '📋')">
+                <span class="p-icon">📋</span> 复制图片
+              </button>
+              <button class="popover-item" onclick="doActionC('保存图片', '💾')">
+                <span class="p-icon">💾</span> 保存图片
+              </button>
+              <button class="popover-item" onclick="doActionC('复制文字', '📝')">
+                <span class="p-icon">📝</span> 复制文字
+              </button>
+            </div>
+          </div>
+
+          <div class="c-preview" id="previewC">
+            <div class="c-preview-header">
+              <span id="previewCLabel">✓ 已保存</span>
+              <button class="c-preview-close" onclick="closePreviewC()">✕</button>
+            </div>
+            <div class="c-preview-img">
+              <p class="preview-quote">"你已经做得很好了，不用逼自己太紧。"</p>
+              <p class="preview-watermark">— Xiaozhi Journal · 2026/4/15</p>
+            </div>
+          </div>
+
+          <p class="quote-text">"你已经做得很好了，不用逼自己太紧。"</p>
+          <p class="quote-date">2026/4/15</p>
+        </div>
+        <div style="margin-top:16px;text-align:center;">
+          <p style="font-size:13px;color:#8A817C;">小知："方案可能不完美，但你在坚持。"</p>
+        </div>
+      </div>
+
+      <div class="toast" id="toastC"></div>
+    </div>
+    <p class="note">最轻量，渐进式披露，预览出现在选择之后</p>
+  </div>
+
+</div>
+
+<script>
+  // ====== Option A: Bottom Sheet ======
+  function openSheetA() {
+    document.getElementById('sheetA').classList.add('active');
+    document.getElementById('overlayA').classList.add('active');
+  }
+  function closeSheetA() {
+    document.getElementById('sheetA').classList.remove('active');
+    document.getElementById('overlayA').classList.remove('active');
+  }
+  function doAction(msg, opt) {
+    closeSheetA();
+    showToast('toastA', msg);
+  }
+
+  // ====== Option B: Card Flip ======
+  let flipped = false;
+  function flipCard() {
+    document.getElementById('flipCardB').classList.add('flipped');
+    flipped = true;
+  }
+  function unflipCard() {
+    document.getElementById('flipCardB').classList.remove('flipped');
+    flipped = false;
+  }
+  function doAction(msg, opt) {
+    showToast('toastB', msg);
+    setTimeout(unflipCard, 800);
+  }
+
+  // ====== Option C: Popover ======
+  let popoverOpen = false;
+  function togglePopoverC() {
+    const popover = document.getElementById('popoverC');
+    const preview = document.getElementById('previewC');
+    preview.classList.remove('active');
+    popoverOpen = !popoverOpen;
+    popover.classList.toggle('active', popoverOpen);
+  }
+  function doActionC(action, icon) {
+    document.getElementById('popoverC').classList.remove('active');
+    popoverOpen = false;
+    document.getElementById('previewCLabel').textContent = icon + ' ' + action;
+    setTimeout(() => {
+      document.getElementById('previewC').classList.add('active');
+    }, 150);
+  }
+  function closePreviewC() {
+    document.getElementById('previewC').classList.remove('active');
+  }
+
+  // ====== Toast ======
+  function showToast(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 2000);
+  }
+
+  // Close popover on outside click (Option C)
+  document.addEventListener('click', (e) => {
+    const popover = document.getElementById('popoverC');
+    const btn = document.getElementById('shareBtnC');
+    if (popoverOpen && !popover.contains(e.target) && !btn.contains(e.target)) {
+      popover.classList.remove('active');
+      popoverOpen = false;
+    }
+  });
+</script>
+
+</body>
+</html>

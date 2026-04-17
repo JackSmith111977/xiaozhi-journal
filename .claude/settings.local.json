@@ -47,7 +47,11 @@
       "Bash(taskkill //IM node.exe //F)",
       "mcp__next-devtools__init",
       "mcp__playwright__browser_evaluate",
-      "mcp__playwright__browser_close"
+      "mcp__playwright__browser_close",
+      "Bash(npx tsc *)",
+      "Bash(npm install *)",
+      "Bash(npx eslint *)",
+      "Bash(taskkill //IM chrome.exe //F)"
     ]
   }
 }
