@@ -159,7 +159,7 @@ pnpm create turbo@latest xiaozhi-journal-monorepo
 - API Key 应用层加密（AES-256-GCM）
 - 限次逻辑（服务端检查 ai_usage 表）
 - Server/Client 组件边界
-- Vercel + Supabase 部署策略
+- Cloudflare Workers + OpenNext（国内）/ Vercel（国际）双平台部署策略
 
 **Deferred Decisions (Post-MVP):**
 - Monorepo 迁移（Phase 3，需要 Taro 时执行）
@@ -262,15 +262,24 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
 
 ### Infrastructure & Deployment
 
-**Web 托管：** Vercel（Next.js 原生支持 + Supabase 集成）
+**Web 托管（双平台策略）：**
+
+| 平台 | 目标区域 | 用途 |
+|------|---------|------|
+| **Vercel** | 国际 | 默认部署，Next.js 原生支持 + Supabase 集成 |
+| **Cloudflare Workers + OpenNext** | 国内 | 解决 Vercel 域名 DNS 污染问题，国内可访问 |
+
+**技术选型：** Cloudflare Workers 使用 `@opennextjs/cloudflare` 适配器，应用代码零改动，通过 `wrangler.jsonc` 配置入口和兼容性标志。
 
 **Supabase 环境：** 开发库 + 生产库分离，两环境起步。
 
-**CI/CD：** Vercel 自动部署（main → production），最简单方案。
+**CI/CD：**
+- 开发阶段：Vercel 自动部署（main → preview）
+- 生产阶段：GitHub Actions 双平台部署（Vercel + Cloudflare Workers）
 
 **错误监控：** Sentry（免费额度够用），Phase 4 添加。
 
-**扩展策略：** Supabase 自动扩展 + Vercel Serverless，支持 1K→10K DAU 无需架构变更。
+**扩展策略：** Supabase 自动扩展 + Vercel/Cloudflare 双平台，支持 1K→10K DAU 无需架构变更。
 
 ### Decision Impact Analysis
 

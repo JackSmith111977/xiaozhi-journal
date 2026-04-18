@@ -126,7 +126,7 @@ This document provides the complete epic and story breakdown for Xiaozhi Journal
 - 数据库命名：`snake_case`（表名/列名），前端 JSON：`camelCase`
 - 文件命名：kebab-case 组件文件，PascalCase 导出
 - 错误处理：AI 失败返回 200 + `fromFallback: true`，不走 HTTP error
-- Vercel 托管 + Supabase 集成，开发/生产两环境
+- Vercel（国际）+ Cloudflare Workers（国内）双平台托管 + Supabase 集成，开发/生产两环境
 - Phase 3 新增：Taro 跨平台（小程序 + App RN/H5 壳），统一 CacheProvider 接口
 - Phase 4 新增：CI/CD 自动部署（main → production），Sentry 错误监控
 
@@ -1200,19 +1200,25 @@ So that 我能确保 AI 成本不超过收入的 40%（NFR20）。
 **NFR 覆盖：** NFR11（SLA）, NFR14（可扩展）
 **优先级：** P1
 
-### Story 13.1: CI/CD 流水线
+### Story 13.1: CI/CD 流水线（双平台部署）
 
 As a 开发者,
-I want 自动化部署流程,
-So that 代码提交后能自动构建和部署。
+I want 自动化部署到 Vercel 和 Cloudflare Workers,
+So that 代码提交后能自动部署到国际和国内两个平台。
 
 **Acceptance Criteria:**
 
 **Given** 代码推送到 main 分支
-**When** Vercel 检测到变更
-**Then** 自动构建 Next.js 项目
-**And** 部署到生产环境
-**And** 构建失败时通知开发者
+**When** GitHub Actions 检测到变更
+**Then** 并行执行双平台部署：
+  - Vercel：通过 Vercel CLI 或 Git 集成构建部署
+  - Cloudflare Workers：通过 `npx @opennextjs/cloudflare build && npx @opennextjs/cloudflare deploy` 构建部署
+**And** 任一平台构建失败时通知开发者
+**And** 部署成功后记录两个平台的访问地址
+
+**Given** 国内用户访问
+**When** 用户通过主域名访问
+**Then** 根据 DNS 解析结果自动路由到对应平台（Cloudflare Workers 为国内入口）
 
 ### Story 13.2: 错误监控集成
 
