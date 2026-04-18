@@ -264,9 +264,11 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
 
 **Web 托管：** Vercel（Next.js 原生支持 + Supabase 集成）
 
+**分支策略：** `master` → 开发环境（日常开发）；`main` → 生产环境（Vercel 自动部署）。
+
 **Supabase 环境：** 开发库 + 生产库分离，两环境起步。
 
-**CI/CD：** Vercel 自动部署（main → production），最简单方案。
+**CI/CD：** Vercel 自动部署（main → production），最简单方案。PR 合入 main 即触发生产部署。
 
 **错误监控：** Sentry（免费额度够用），Phase 4 添加。
 
