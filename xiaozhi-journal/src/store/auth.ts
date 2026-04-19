@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
+import { useJournalStore } from './journal'
 import type { User } from '@supabase/supabase-js'
 
 interface AuthState {
@@ -22,18 +23,36 @@ export const useAuthStore = create<AuthState>((set) => ({
   setLoading: (loading) => set({ loading }),
 
   initialize: () => {
-    // Check current session on init
+    // Check current session on init — start realtime if already signed in.
+    // subscribeJournals is idempotent (unsubscribes old channel first),
+    // so calling it here and again in onAuthStateChange is safe.
     supabase.auth.getSession().then(({ data: { session } }) => {
-      set({ user: session?.user ?? null, isAuthenticated: !!session?.user, loading: false })
+      const isAuthenticated = !!session?.user
+      set({ user: session?.user ?? null, isAuthenticated, loading: false })
+      if (isAuthenticated) {
+        useJournalStore.getState().startRealtimeSubscription()
+        useJournalStore.getState().initOfflineSync()
+      }
     })
 
     // Listen for auth state changes
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange((event, session) => {
+      const isAuthenticated = !!session?.user
       set({
         user: session?.user ?? null,
-        isAuthenticated: !!session?.user,
+        isAuthenticated,
         loading: false,
       })
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (isAuthenticated) {
+          useJournalStore.getState().startRealtimeSubscription()
+          useJournalStore.getState().initOfflineSync()
+        }
+      } else if (event === 'SIGNED_OUT') {
+        useJournalStore.getState().stopRealtimeSubscription()
+        useJournalStore.getState().stopOfflineSync()
+        useJournalStore.getState().clearAllData()
+      }
     })
   },
 }))

@@ -127,7 +127,7 @@ export async function syncToSupabase(journals: Journal[]) {
 
   if (error) {
     console.warn('[CacheProvider] syncToSupabase failed:', error.message);
-    return;
+    throw error;
   }
 
   for (const j of journals) {

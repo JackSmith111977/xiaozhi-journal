@@ -6,23 +6,6 @@ export async function signUp(email: string, password: string) {
     password,
   })
   if (error) throw error
-
-  // Auto-insert profile record (gracefully handle missing table)
-  if (data.user) {
-    const nickname = data.user.email?.split('@')[0] || '用户'
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: data.user.id,
-        email: data.user.email,
-        nickname,
-      })
-
-    if (profileError) {
-      console.warn('[Auth] Failed to insert profile:', profileError.message)
-    }
-  }
-
   return data
 }
 

@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { getJournals, getJournalById, addJournal as dbAdd, updateJournal as dbUpdate, syncToSupabase } from '@/lib/db';
+import { subscribeJournals, unsubscribeJournals } from '@/lib/realtime';
+import { initSyncManager, stopSyncManager, getSyncingStatus } from '@/lib/sync-manager';
 import type { Journal, AIResponse } from '@/types';
+
+// Stable handler references for online/offline listener cleanup
+let onOnlineHandler: (() => void) | null = null;
+let onOfflineHandler: (() => void) | null = null;
 
 interface JournalState {
   journals: Journal[];
@@ -11,6 +17,8 @@ interface JournalState {
   aiWaiting: boolean;
   latestAIResponse: AIResponse | null;
   isSyncing: boolean;
+  isOnline: boolean;
+  pendingMessage: string | null;
 }
 
 interface JournalActions {
@@ -18,11 +26,17 @@ interface JournalActions {
   addJournal: (journal: Journal) => Promise<void>;
   updateJournal: (journal: Journal) => Promise<void>;
   updateAIResponse: (id: string, response: AIResponse) => Promise<void>;
+  handleRealtimeChange: (event: 'INSERT' | 'UPDATE' | 'DELETE', journal: Journal) => void;
+  startRealtimeSubscription: () => void;
+  stopRealtimeSubscription: () => void;
   setSelectedMood: (mood: number | null) => void;
   setDraftContent: (content: string) => void;
   setAIWaiting: (waiting: boolean) => void;
   setLatestAIResponse: (response: AIResponse | null) => void;
   setError: (error: string | null) => void;
+  clearAllData: () => void;
+  initOfflineSync: () => void;
+  stopOfflineSync: () => void;
 }
 
 export const useJournalStore = create<JournalState & JournalActions>((set) => ({
@@ -34,6 +48,8 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
   aiWaiting: false,
   latestAIResponse: null,
   isSyncing: false,
+  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  pendingMessage: null,
 
   fetchJournals: async () => {
     set({ loading: true });
@@ -48,18 +64,31 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
   addJournal: async (journal: Journal) => {
     set({ error: null });
     try {
-      await dbAdd(journal);
+      // Always save to IndexedDB first with pending status
+      const offlineJournal = { ...journal, status: 'pending' as const };
+      await dbAdd(offlineJournal);
       set((state) => ({
-        journals: [journal, ...state.journals],
+        journals: [offlineJournal, ...state.journals],
         draftContent: '',
         selectedMood: null,
       }));
-      // 异步触发 Supabase 同步，不阻塞用户操作
+
+      // Check if online — show pending message if offline
+      const { isOnline: online } = getSyncingStatus();
+      if (!online) {
+        set({ pendingMessage: '已保存，小知在路上~' });
+        return;
+      }
+
+      // Async trigger Supabase sync, don't block user
       set({ isSyncing: true });
       try {
-        await syncToSupabase([journal]);
+        await syncToSupabase([offlineJournal]);
+        // Clear pending message on success
+        set({ pendingMessage: null });
       } catch (err) {
-        console.warn('[Store] syncToSupabase failed:', err);
+        console.warn('[Store] syncToSupabase failed, journal remains pending:', err);
+        // Journal stays pending in IndexedDB, will retry on next online
       } finally {
         set({ isSyncing: false });
       }
@@ -71,10 +100,22 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
   updateJournal: async (journal: Journal) => {
     set({ error: null });
     try {
-      await dbUpdate(journal);
+      // Mark as pending so offline edits sync on reconnect
+      const offlineJournal = { ...journal, status: 'pending' as const };
+      await dbUpdate(offlineJournal);
       set((state) => ({
-        journals: state.journals.map((j) => (j.id === journal.id ? journal : j)),
+        journals: state.journals.map((j) => (j.id === journal.id ? offlineJournal : j)),
       }));
+
+      // Check online status — if online, sync immediately
+      const { isOnline: online } = getSyncingStatus();
+      if (online) {
+        try {
+          await syncToSupabase([offlineJournal]);
+        } catch (err) {
+          console.warn('[Store] syncToSupabase failed on update, journal remains pending:', err);
+        }
+      }
     } catch (err) {
       set({ error: '更新失败' });
     }
@@ -109,4 +150,66 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
   setAIWaiting: (waiting) => set({ aiWaiting: waiting }),
   setLatestAIResponse: (response) => set({ latestAIResponse: response }),
   setError: (error) => set({ error }),
+
+  // Realtime subscription handlers
+  handleRealtimeChange: (event, journal) => {
+    if (event === 'INSERT') {
+      set((state) => ({ journals: [journal, ...state.journals] }));
+    } else if (event === 'UPDATE') {
+      set((state) => ({
+        journals: state.journals.map((j) => (j.id === journal.id ? journal : j)),
+      }));
+    } else if (event === 'DELETE') {
+      set((state) => ({
+        journals: state.journals.filter((j) => j.id !== journal.id),
+      }));
+    }
+  },
+
+  startRealtimeSubscription: () => {
+    set({ error: null });
+    subscribeJournals((event, journal) => {
+      useJournalStore.getState().handleRealtimeChange(event, journal);
+    });
+  },
+
+  stopRealtimeSubscription: () => {
+    unsubscribeJournals();
+  },
+
+  clearAllData: () => {
+    // Only clears state — subscription lifecycle is managed by start/stop.
+    set({
+      journals: [],
+      loading: false,
+      error: null,
+      selectedMood: null,
+      draftContent: '',
+      aiWaiting: false,
+      latestAIResponse: null,
+      isSyncing: false,
+      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      pendingMessage: null,
+    });
+  },
+
+  initOfflineSync: () => {
+    initSyncManager();
+    // Remove old listeners first (idempotent)
+    if (onOnlineHandler) window.removeEventListener('online', onOnlineHandler);
+    if (onOfflineHandler) window.removeEventListener('offline', onOfflineHandler);
+    // Create stable handler references
+    onOnlineHandler = () => set({ isOnline: true, pendingMessage: null });
+    onOfflineHandler = () => set({ isOnline: false });
+    window.addEventListener('online', onOnlineHandler);
+    window.addEventListener('offline', onOfflineHandler);
+  },
+
+  stopOfflineSync: () => {
+    stopSyncManager();
+    if (onOnlineHandler) window.removeEventListener('online', onOnlineHandler);
+    if (onOfflineHandler) window.removeEventListener('offline', onOfflineHandler);
+    onOnlineHandler = null;
+    onOfflineHandler = null;
+  },
 }));

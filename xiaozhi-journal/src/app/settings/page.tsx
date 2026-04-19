@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
+import { exportUserData } from '@/lib/export';
+import { deleteAccount } from '@/lib/account';
 import { useAuthStore } from '@/store/auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { motion } from 'framer-motion';
@@ -29,9 +31,21 @@ function SettingsContent() {
   const [savingNickname, setSavingNickname] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const messageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cleanup message timers on unmount
+  useEffect(() => {
+    return () => {
+      if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
+    };
+  }, []);
 
   // Load profile data
   useEffect(() => {
@@ -57,6 +71,14 @@ function SettingsContent() {
 
     return () => { cancelled = true; };
   }, [user]);
+
+  const autoDismiss = (cb: () => void) => {
+    if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
+    messageTimerRef.current = setTimeout(() => {
+      messageTimerRef.current = null;
+      cb();
+    }, 2000);
+  };
 
   const handleSaveNickname = async () => {
     const trimmed = nickname.trim();
@@ -94,8 +116,7 @@ function SettingsContent() {
       }
 
       setMessage({ type: 'success', text: '已保存' });
-      // Auto-dismiss after 2s
-      setTimeout(() => setMessage(null), 2000);
+      autoDismiss(() => setMessage(null));
     } catch {
       setMessage({ type: 'error', text: '保存失败，请稍后重试' });
       setNickname(previousNickname);
@@ -154,13 +175,27 @@ function SettingsContent() {
 
       setProfile((prev) => (prev ? { ...prev, avatar_url: filePath } : null));
       setMessage({ type: 'success', text: '头像已更新' });
-      // Auto-dismiss after 2s
-      setTimeout(() => setMessage(null), 2000);
+      autoDismiss(() => setMessage(null));
     } catch {
       setMessage({ type: 'error', text: '上传失败，请稍后重试' });
     } finally {
       setSavingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    setMessage(null);
+    try {
+      await exportUserData();
+      setMessage({ type: 'success', text: '导出成功' });
+      autoDismiss(() => setMessage(null));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '导出失败，请稍后再试';
+      setMessage({ type: 'error', text: msg });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -173,6 +208,24 @@ function SettingsContent() {
     } catch {
       setMessage({ type: 'error', text: '退出失败，请稍后再试' });
       setSigningOut(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleting) return;
+    if (deleteConfirmInput.trim() !== '确认删除') return;
+    setDeleting(true);
+    setMessage(null);
+    try {
+      await deleteAccount();
+      setShowDeleteConfirm(false);
+      useAuthStore.getState().setUser(null);
+      router.push('/auth/login');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '删除失败，请稍后再试';
+      setMessage({ type: 'error', text: msg });
+      setDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -272,8 +325,17 @@ function SettingsContent() {
           </div>
         )}
 
-        {/* Sign out */}
-        <div className="pt-8 border-t border-[#E8E0D8]">
+        {/* Sign out & Danger zone */}
+        <div className="pt-8 border-t border-[#E8E0D8] space-y-3">
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full py-3 rounded-xl text-sm font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#A8C5A0', color: '#fff' }}
+          >
+            {exporting ? '正在准备你的数据，请稍候...' : '导出数据'}
+          </button>
           <button
             type="button"
             onClick={handleSignOut}
@@ -284,6 +346,78 @@ function SettingsContent() {
             {signingOut ? '退出中...' : '退出登录'}
           </button>
         </div>
+
+        {/* Delete account danger zone */}
+        <div className="pt-8 border-t border-[#E8E0D8]">
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={deleting}
+            className="w-full py-3 rounded-xl text-sm font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed border-2 border-[#D4856A]"
+            style={{ backgroundColor: 'transparent', color: '#D4856A' }}
+          >
+            删除账户
+          </button>
+        </div>
+
+        {/* Delete confirmation modal */}
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
+            onClick={() => { if (!deleting) setShowDeleteConfirm(false); }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-[#FDF8F5] rounded-2xl p-6 max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2
+                className="text-lg text-[#3D3D3D] mb-3"
+                style={{ fontFamily: 'var(--font-noto-serif)' }}
+              >
+                确认删除账户？
+              </h2>
+              <p className="text-sm text-[#8A817C] mb-4" style={{ fontFamily: 'var(--font-noto-sans)' }}>
+                删除后 30 天内数据将被彻底清除，此操作不可撤销。
+              </p>
+              <p className="text-sm text-[#8A817C] mb-4" style={{ fontFamily: 'var(--font-noto-sans)' }}>
+                请输入「<strong>确认删除</strong>」以继续：
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmInput}
+                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                placeholder="确认删除"
+                className="w-full bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors mb-6"
+                style={{ fontFamily: 'var(--font-noto-sans)' }}
+                disabled={deleting}
+              />
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="flex-1 py-3 rounded-xl text-sm font-medium transition-opacity disabled:opacity-40"
+                  style={{ backgroundColor: '#E8E0D8', color: '#3D3D3D' }}
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmInput.trim() !== '确认删除' || deleting}
+                  className="flex-1 py-3 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: '#D4856A' }}
+                >
+                  {deleting ? '删除中...' : '确认删除'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
 
         {/* Feedback messages */}
         {message && (

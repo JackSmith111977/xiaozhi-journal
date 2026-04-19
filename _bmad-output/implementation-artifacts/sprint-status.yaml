@@ -62,13 +62,13 @@ development_status:
   epic-8-retrospective: done
 
   # Epic 9: 数据云端同步
-  epic-9: backlog
-  9-1-supabase-db-migration-rls: backlog
-  9-2-realtime-subscription-zustand: backlog
-  9-3-offline-sync-conflict-resolution: backlog
-  9-4-data-export: backlog
-  9-5-account-deletion: backlog
-  epic-9-retrospective: optional
+  epic-9: done
+  9-1-supabase-db-migration-rls: done
+  9-2-realtime-subscription-zustand: done
+  9-3-offline-sync-conflict-resolution: done
+  9-4-data-export: done
+  9-5-account-deletion: done
+  epic-9-retrospective: done
 
   # Epic 2: 3 秒心情打卡
   epic-2: backlog
