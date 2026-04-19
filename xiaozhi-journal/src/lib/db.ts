@@ -1,5 +1,6 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import type { Journal, AppMeta } from '@/types';
+import { supabase } from './supabase';
 
 const DB_NAME = 'xiaozhi-journal';
 const DB_VERSION = 1;
@@ -82,4 +83,54 @@ export async function getMeta(key: string): Promise<unknown | undefined> {
   const db = await getDB();
   const meta = await db.get('appMeta', key);
   return meta?.value;
+}
+
+export async function deleteJournal(id: string) {
+  const db = await getDB();
+  await db.delete('journals', id);
+}
+
+export async function markSynced(id: string) {
+  const db = await getDB();
+  const journal = await db.get('journals', id);
+  if (journal) {
+    const updated = { ...journal, status: 'ai_done' as const };
+    await db.put('journals', updated);
+  }
+}
+
+export async function syncToSupabase(journals: Journal[]) {
+  if (journals.length === 0) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    console.warn('[CacheProvider] syncToSupabase skipped: user not logged in');
+    return;
+  }
+
+  const records = journals.map(j => ({
+    id: j.id,
+    user_id: user.id,
+    content: j.content,
+    mood: j.mood,
+    mood_emoji: j.moodEmoji,
+    ai_response: j.aiResponse,
+    golden_quote: j.goldenQuote,
+    mood_label: j.moodLabel,
+    created_at: j.timestamp,
+    status: j.status,
+  }));
+
+  const { error } = await supabase
+    .from('journals')
+    .upsert(records);
+
+  if (error) {
+    console.warn('[CacheProvider] syncToSupabase failed:', error.message);
+    return;
+  }
+
+  for (const j of journals) {
+    await markSynced(j.id);
+  }
 }

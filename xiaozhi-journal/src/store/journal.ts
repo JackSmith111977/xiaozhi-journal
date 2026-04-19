@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getJournals, getJournalById, addJournal as dbAdd, updateJournal as dbUpdate } from '@/lib/db';
+import { getJournals, getJournalById, addJournal as dbAdd, updateJournal as dbUpdate, syncToSupabase } from '@/lib/db';
 import type { Journal, AIResponse } from '@/types';
 
 interface JournalState {
@@ -10,6 +10,7 @@ interface JournalState {
   draftContent: string;
   aiWaiting: boolean;
   latestAIResponse: AIResponse | null;
+  isSyncing: boolean;
 }
 
 interface JournalActions {
@@ -32,6 +33,7 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
   draftContent: '',
   aiWaiting: false,
   latestAIResponse: null,
+  isSyncing: false,
 
   fetchJournals: async () => {
     set({ loading: true });
@@ -52,6 +54,15 @@ export const useJournalStore = create<JournalState & JournalActions>((set) => ({
         draftContent: '',
         selectedMood: null,
       }));
+      // 异步触发 Supabase 同步，不阻塞用户操作
+      set({ isSyncing: true });
+      try {
+        await syncToSupabase([journal]);
+      } catch (err) {
+        console.warn('[Store] syncToSupabase failed:', err);
+      } finally {
+        set({ isSyncing: false });
+      }
     } catch (err) {
       set({ error: '保存失败' });
     }

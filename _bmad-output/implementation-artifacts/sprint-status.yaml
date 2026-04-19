@@ -47,10 +47,10 @@ development_status:
   # ===========================
 
   # Epic 1: 项目基础适配
-  epic-1: backlog
-  1-1-supabase-client-init-env: backlog
-  1-2-indexeddb-cache-layer-refactor: backlog
-  1-3-seed-data-empty-state: backlog
+  epic-1: done
+  1-1-supabase-client-init-env: done
+  1-2-indexeddb-cache-layer-refactor: done
+  1-3-seed-data-empty-state: done
   epic-1-retrospective: optional
 
   # Epic 8: 用户注册与登录
