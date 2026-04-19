@@ -26,14 +26,17 @@ function SettingsContent() {
   const { user } = useAuthStore();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [nickname, setNickname] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [savingNickname, setSavingNickname] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load profile data
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
 
     supabase
       .from('profiles')
@@ -41,15 +44,18 @@ function SettingsContent() {
       .eq('id', user.id)
       .single()
       .then(({ data, error }) => {
+        if (cancelled) return;
         if (error || !data) {
-          // Graceful fallback: table may not exist yet
           setProfile(null);
           setNickname(user.email?.split('@')[0] || '用户');
         } else {
           setProfile(data);
           setNickname(data.nickname || user.email?.split('@')[0] || '用户');
         }
+        setLoadingProfile(false);
       });
+
+    return () => { cancelled = true; };
   }, [user]);
 
   const handleSaveNickname = async () => {
@@ -59,7 +65,8 @@ function SettingsContent() {
       return;
     }
 
-    setSaving(true);
+    const previousNickname = nickname;
+    setSavingNickname(true);
     setMessage(null);
 
     try {
@@ -69,20 +76,31 @@ function SettingsContent() {
         .eq('id', user!.id);
 
       if (error) {
-        // Graceful fallback: table may not exist
         console.warn('[Settings] Failed to update profile:', error.message);
         setMessage({ type: 'error', text: '保存失败，请稍后重试' });
-        setNickname(profile?.nickname || user!.email?.split('@')[0] || '用户');
+        setNickname(previousNickname);
         return;
       }
 
       setProfile((prev) => (prev ? { ...prev, nickname: trimmed } : null));
+
+      // P0 fix: Sync Zustand store with updated nickname
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) {
+        useAuthStore.getState().setUser({
+          ...currentUser,
+          user_metadata: { ...currentUser.user_metadata, nickname: trimmed },
+        });
+      }
+
       setMessage({ type: 'success', text: '已保存' });
+      // Auto-dismiss after 2s
+      setTimeout(() => setMessage(null), 2000);
     } catch {
       setMessage({ type: 'error', text: '保存失败，请稍后重试' });
-      setNickname(profile?.nickname || user!.email?.split('@')[0] || '用户');
+      setNickname(previousNickname);
     } finally {
-      setSaving(false);
+      setSavingNickname(false);
     }
   };
 
@@ -93,6 +111,7 @@ function SettingsContent() {
     // File size validation (≤ 2MB)
     if (file.size > 2 * 1024 * 1024) {
       setMessage({ type: 'error', text: '头像大小不能超过 2MB' });
+      e.target.value = '';
       return;
     }
 
@@ -100,10 +119,11 @@ function SettingsContent() {
     const allowedTypes = ['image/jpeg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
       setMessage({ type: 'error', text: '仅支持 JPG/PNG 格式' });
+      e.target.value = '';
       return;
     }
 
-    setSaving(true);
+    setSavingAvatar(true);
     setMessage(null);
 
     try {
@@ -134,11 +154,12 @@ function SettingsContent() {
 
       setProfile((prev) => (prev ? { ...prev, avatar_url: filePath } : null));
       setMessage({ type: 'success', text: '头像已更新' });
+      // Auto-dismiss after 2s
+      setTimeout(() => setMessage(null), 2000);
     } catch {
       setMessage({ type: 'error', text: '上传失败，请稍后重试' });
     } finally {
-      setSaving(false);
-      // Reset file input
+      setSavingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -155,8 +176,9 @@ function SettingsContent() {
     }
   };
 
+  // P1 fix: cache-busting to avoid browser serving stale avatar images
   const avatarUrl = profile?.avatar_url
-    ? supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl
+    ? `${supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}?t=${Date.now()}`
     : null;
 
   return (
@@ -195,7 +217,7 @@ function SettingsContent() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={saving}
+              disabled={savingAvatar}
               className="px-4 py-2 rounded-xl text-sm text-white font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ backgroundColor: '#E8C4A0' }}
             >
@@ -221,29 +243,33 @@ function SettingsContent() {
         </div>
 
         {/* Nickname edit */}
-        <div className="mb-8">
-          <label className="text-sm text-[#8A817C] mb-1 block">昵称</label>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              maxLength={20}
-              placeholder="请输入昵称（1-20 字符）"
-              className="flex-1 bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors"
-              style={{ fontFamily: 'var(--font-noto-sans)' }}
-            />
-            <button
-              type="button"
-              onClick={handleSaveNickname}
-              disabled={saving}
-              className="px-4 py-2 rounded-xl text-sm text-white font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#A8C5A0' }}
-            >
-              {saving ? '保存中...' : '保存'}
-            </button>
+        {loadingProfile ? (
+          <div className="mb-8 text-[#8A817C] animate-pulse">加载个人信息中...</div>
+        ) : (
+          <div className="mb-8">
+            <label className="text-sm text-[#8A817C] mb-1 block">昵称</label>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                maxLength={20}
+                placeholder="请输入昵称（1-20 字符）"
+                className="flex-1 bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors"
+                style={{ fontFamily: 'var(--font-noto-sans)' }}
+              />
+              <button
+                type="button"
+                onClick={handleSaveNickname}
+                disabled={savingNickname}
+                className="px-4 py-2 rounded-xl text-sm text-white font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#A8C5A0' }}
+              >
+                {savingNickname ? '保存中...' : '保存'}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Sign out */}
         <div className="pt-8 border-t border-[#E8E0D8]">

@@ -29,6 +29,14 @@ So that 我能个性化自己的账号。
 
 ## Tasks / Subtasks
 
+- [ ] Review Follow-ups (AI)
+  - [x] [AI-Review] [P0] AC1 修复 — Zustand store 同步更新用户昵称（handleSaveNickname 成功后同步）
+  - [x] [AI-Review] [P1] 头像 URL 加 cache-busting 参数（避免浏览器缓存旧头像）
+  - [ ] [AI-Review] [P2] 拆分 saving 状态为 savingNickname / savingAvatar
+  - [ ] [AI-Review] [P2] 文件输入在早期验证失败时重置
+  - [ ] [AI-Review] [P2] 成功消息 2s 自动清除
+  - [ ] [AI-Review] [P2] 初始加载 loading 状态
+
 - [x] Task 1: 设置页 UI (AC: #1)
   - [x] 创建 `src/app/settings/page.tsx`
   - [x] 显示当前用户邮箱、昵称（如有）
@@ -114,3 +122,18 @@ qwen3.6-plus
 ## Change Log
 
 Story 8.4 实现个人资料管理：昵称编辑、头像上传、退出登录。profiles 表不存在时 graceful fallback 显示邮箱。
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-04-19
+**Review Outcome:** Changes Requested
+**Action Items:** 6 items (1 High/P0, 1 Med/P1, 4 Low/P2)
+
+### Action Items
+
+- [x] **[P0]** AC1 违反 — Zustand store 未同步更新用户昵称。保存成功后需更新 useAuthStore。
+- [x] **[P1]** 头像上传后浏览器缓存旧图。getPublicUrl 返回的 URL 不变，应加 cache-busting 参数。
+- [ ] **[P2]** 共享 saving 状态导致一个操作进行时会禁用另一个按钮。拆分为 savingNickname / savingAvatar。
+- [ ] **[P2]** 文件输入在早期验证失败时未重置，同一文件第二次选择不会触发 onChange。
+- [ ] **[P2]** 成功消息不自动消失，可加 2s 自动清除。
+- [ ] **[P2]** 初始加载无 loading 状态，profile 数据异步加载期间有短暂闪烁。
