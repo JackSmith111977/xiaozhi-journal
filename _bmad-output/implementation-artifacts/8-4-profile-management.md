@@ -114,6 +114,7 @@ qwen3.6-plus
 - `tsc --noEmit` 编译通过
 - profiles 表不存在时 graceful fallback 显示邮箱作为昵称
 - 头像上传：自动创建 avatars/{userId}/avatar.jpg|png 路径，upsert 覆盖旧头像
+- 第二次 review 修复：avatarUrl 用 useMemo 避免每次 render 重新下载，user_metadata null 安全展开
 
 ### File List
 
