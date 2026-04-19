@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
@@ -89,7 +89,7 @@ function SettingsContent() {
       if (currentUser) {
         useAuthStore.getState().setUser({
           ...currentUser,
-          user_metadata: { ...currentUser.user_metadata, nickname: trimmed },
+          user_metadata: { ...(currentUser.user_metadata ?? {}), nickname: trimmed },
         });
       }
 
@@ -176,10 +176,11 @@ function SettingsContent() {
     }
   };
 
-  // P1 fix: cache-busting to avoid browser serving stale avatar images
-  const avatarUrl = profile?.avatar_url
-    ? `${supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}?t=${Date.now()}`
-    : null;
+  // Cache-busting: only re-fetch when avatar_url actually changes
+  const avatarUrl = useMemo(() => {
+    if (!profile?.avatar_url) return null;
+    return `${supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}?t=${Date.now()}`;
+  }, [profile?.avatar_url]);
 
   return (
     <main className="min-h-screen bg-[#FDF8F5] px-6 py-12">
