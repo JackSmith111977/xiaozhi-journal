@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signUp, signIn } from '@/lib/auth';
+import { signUp, signIn, resetPassword } from '@/lib/auth';
 import { AuthGuard } from '@/components/auth-guard';
 import { motion } from 'framer-motion';
 
-type Mode = 'register' | 'login';
+type Mode = 'register' | 'login' | 'reset';
 
 export default function AuthPage() {
   return (
@@ -30,12 +30,27 @@ function AuthPageContent() {
   const isPasswordValid = password.length >= 8;
   const canSubmit = mode === 'register'
     ? email && isPasswordValid && ageConfirmed
-    : email && isPasswordValid;
+    : mode === 'reset'
+      ? !!email
+      : email && isPasswordValid;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+
+    if (mode === 'reset') {
+      setLoading(true);
+      try {
+        await resetPassword(email, `${window.location.origin}/auth/callback`);
+        setSuccess('重置链接已发送到你的邮箱，请查收');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : '发送失败');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     if (mode === 'register' && !isPasswordValid) {
       setError('密码至少需要 8 位');
@@ -76,34 +91,36 @@ function AuthPageContent() {
           className="text-2xl text-[#3D3D3D] text-center mb-8"
           style={{ fontFamily: 'var(--font-noto-serif)' }}
         >
-          Xiaozhi Journal
+          {mode === 'reset' ? '重置密码' : 'Xiaozhi Journal'}
         </h1>
 
-        {/* Mode toggle */}
-        <div className="flex mb-8 border-b border-[#E8E0D8]">
-          <button
-            type="button"
-            onClick={() => setMode('register')}
-            className={`flex-1 pb-2 text-sm font-medium transition-colors ${
-              mode === 'register'
-                ? 'text-[#D4856A] border-b-2 border-[#D4856A]'
-                : 'text-[#8A817C]'
-            }`}
-          >
-            注册
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('login')}
-            className={`flex-1 pb-2 text-sm font-medium transition-colors ${
-              mode === 'login'
-                ? 'text-[#D4856A] border-b-2 border-[#D4856A]'
-                : 'text-[#8A817C]'
-            }`}
-          >
-            登录
-          </button>
-        </div>
+        {/* Mode toggle (hidden in reset mode) */}
+        {mode !== 'reset' && (
+          <div className="flex mb-8 border-b border-[#E8E0D8]">
+            <button
+              type="button"
+              onClick={() => setMode('register')}
+              className={`flex-1 pb-2 text-sm font-medium transition-colors ${
+                mode === 'register'
+                  ? 'text-[#D4856A] border-b-2 border-[#D4856A]'
+                  : 'text-[#8A817C]'
+              }`}
+            >
+              注册
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('login')}
+              className={`flex-1 pb-2 text-sm font-medium transition-colors ${
+                mode === 'login'
+                  ? 'text-[#D4856A] border-b-2 border-[#D4856A]'
+                  : 'text-[#8A817C]'
+              }`}
+            >
+              登录
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           {/* Email */}
@@ -112,28 +129,30 @@ function AuthPageContent() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="请输入邮箱"
+              placeholder={mode === 'reset' ? '请输入注册邮箱' : '请输入邮箱'}
               required
               className="w-full bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors"
               style={{ fontFamily: 'var(--font-noto-sans)' }}
             />
           </div>
 
-          {/* Password */}
-          <div className="mb-6">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="请输入密码（至少 8 位）"
-              required
-              className="w-full bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors"
-              style={{ fontFamily: 'var(--font-noto-sans)' }}
-            />
-            {mode === 'register' && !isPasswordValid && password.length > 0 && (
-              <p className="text-[#D4856A] text-xs mt-1">密码至少需要 8 位</p>
-            )}
-          </div>
+          {/* Password (hidden in reset mode) */}
+          {mode !== 'reset' && (
+            <div className="mb-6">
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="请输入密码（至少 8 位）"
+                required
+                className="w-full bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors"
+                style={{ fontFamily: 'var(--font-noto-sans)' }}
+              />
+              {mode === 'register' && !isPasswordValid && password.length > 0 && (
+                <p className="text-[#D4856A] text-xs mt-1">密码至少需要 8 位</p>
+              )}
+            </div>
+          )}
 
           {/* Age confirmation (register only) */}
           {mode === 'register' && (
@@ -155,7 +174,7 @@ function AuthPageContent() {
             className="w-full py-3 rounded-xl text-white font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#E8C4A0' }}
           >
-            {loading ? '处理中...' : mode === 'register' ? '注册' : '登录'}
+            {loading ? '处理中...' : mode === 'register' ? '注册' : mode === 'reset' ? '发送重置链接' : '登录'}
           </button>
 
           {/* Forgot password link (login only) */}
@@ -163,9 +182,23 @@ function AuthPageContent() {
             <div className="text-center mt-4">
               <button
                 type="button"
+                onClick={() => setMode('reset')}
                 className="text-xs text-[#D4856A] hover:underline"
               >
                 忘记密码？
+              </button>
+            </div>
+          )}
+
+          {/* Reset mode: back to login */}
+          {mode === 'reset' && (
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                className="text-xs text-[#D4856A] hover:underline"
+              >
+                返回登录
               </button>
             </div>
           )}
