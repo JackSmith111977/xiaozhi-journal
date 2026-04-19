@@ -56,7 +56,7 @@ development_status:
   # Epic 8: 用户注册与登录
   epic-8: in-progress
   8-1-email-registration: done
-  8-2-email-login: backlog
+  8-2-email-login: review
   8-3-password-reset: backlog
   8-4-profile-management: backlog
   epic-8-retrospective: optional

@@ -3,11 +3,20 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signUp, signIn } from '@/lib/auth';
+import { AuthGuard } from '@/components/auth-guard';
 import { motion } from 'framer-motion';
 
 type Mode = 'register' | 'login';
 
 export default function AuthPage() {
+  return (
+    <AuthGuard requireAuth={false}>
+      <AuthPageContent />
+    </AuthGuard>
+  );
+}
+
+function AuthPageContent() {
   const [mode, setMode] = useState<Mode>('register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,10 +56,8 @@ export default function AuthPage() {
       const message = err instanceof Error ? err.message : (mode === 'register' ? '注册失败' : '登录失败');
       if (mode === 'register' && (message.includes('already registered') || message.includes('User already registered'))) {
         setError('这个邮箱已经被注册了，试试登录？');
-      } else if (mode === 'login' && (message.includes('Invalid') || message.includes('Invalid login credentials'))) {
-        setError('邮箱或密码不正确');
       } else {
-        setError(message);
+        setError(mode === 'login' ? '邮箱或密码不正确' : message);
       }
     } finally {
       setLoading(false);

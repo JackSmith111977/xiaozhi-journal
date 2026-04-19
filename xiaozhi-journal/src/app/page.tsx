@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useJournalStore } from '@/store/journal';
+import { AuthGuard } from '@/components/auth-guard';
 import { MoodSelector } from '@/components/mood-selector';
 import { JournalInput } from '@/components/journal-input';
 import { EmotionChart } from '@/components/emotion-chart';
@@ -16,6 +17,14 @@ import { SEED_JOURNALS } from '@/lib/seed-data';
 import type { Journal, AIResponse } from '@/types';
 
 export default function Home() {
+  return (
+    <AuthGuard>
+      <HomeContent />
+    </AuthGuard>
+  );
+}
+
+function HomeContent() {
   const { journals, loading, fetchJournals, aiWaiting, selectedMood } = useJournalStore();
   const [initialized, setInitialized] = useState(false);
   const [capsuleJournal, setCapsuleJournal] = useState<Journal | null>(null);
