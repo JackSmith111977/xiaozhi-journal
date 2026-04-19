@@ -57,7 +57,24 @@
       "WebFetch(domain:developers.cloudflare.com)",
       "mcp__WebSearch__bailian_web_search",
       "WebFetch(domain:blog.csdn.net)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git show *)",
+      "Bash(git stash *)",
+      "Bash(git stash pop *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git fetch *)",
+      "Bash(git merge *)",
+      "Bash(git remote *)",
+      "Bash(git rev-parse *)",
+      "Bash(git symbolic-ref *)",
+      "Bash(git worktree *)"
     ]
   }
 }
