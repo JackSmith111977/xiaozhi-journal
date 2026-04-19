@@ -58,7 +58,7 @@ development_status:
   8-1-email-registration: done
   8-2-email-login: done
   8-3-password-reset: done
-  8-4-profile-management: review
+  8-4-profile-management: done
   epic-8-retrospective: optional
 
   # Epic 9: 数据云端同步

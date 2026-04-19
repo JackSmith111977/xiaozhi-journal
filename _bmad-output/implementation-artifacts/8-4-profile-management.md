@@ -1,4 +1,4 @@
-Status: review
+Status: done
 
 # Story 8.4: 个人资料管理
 
