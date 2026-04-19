@@ -7,3 +7,7 @@ user_name: Kei
 communication_language: 中文
 document_output_language: 中文
 output_folder: "{project-root}/_bmad-output"
+
+# Git Branch Strategy
+development_branch: master
+production_branch: main

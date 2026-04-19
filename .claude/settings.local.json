@@ -51,7 +51,13 @@
       "Bash(npx tsc *)",
       "Bash(npm install *)",
       "Bash(npx eslint *)",
-      "Bash(taskkill //IM chrome.exe //F)"
+      "Bash(taskkill //IM chrome.exe //F)",
+      "WebFetch(domain:opennext.js.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "mcp__WebSearch__bailian_web_search",
+      "WebFetch(domain:blog.csdn.net)",
+      "Bash(git checkout *)"
     ]
   }
 }
