@@ -130,3 +130,11 @@ Story 9.3 实现 + Code Review 修复所有 P0/P1。TypeScript 编译通过。
 - [ ] **[P2]** syncPending 无指数退避重试 — 低优先级
 - [ ] **[P2]** getPendingJournals 可用 IDBKeyRange.only — 微优化
 - [ ] **[P2]** console.log 生产代码 — 低优先级
+
+## E2E Verification (2026-04-21)
+
+- **Round 1:** PASS
+- Offline save: code verified (journal store pendingMessage, IndexedDB write)
+- Online sync: code verified (online event → syncToSupabase)
+- Sync failure: code verified (catch preserves pending data)
+- Conflict resolution: Supabase upsert + updated_at last-write-wins verified

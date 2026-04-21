@@ -34,3 +34,11 @@ yarn-error.log*
 
 # Playwright MCP output
 .playwright-mcp/
+
+# E2E test artifacts
+_bmad-output/e2e-screenshots/
+*ui-test.png
+
+# Supabase local config
+xiaozhi-journal/supabase/.branches/
+xiaozhi-journal/supabase/.temp/

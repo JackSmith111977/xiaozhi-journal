@@ -117,3 +117,10 @@ Story 9.2 实现 + Code Review 修复所有 P0/P1。TypeScript 编译通过。
 - [ ] **[P2]** INSERT  prepend 不排序 — 可延至 Story 9.3
 - [ ] **[P2]** 无显式 reconnect 策略 — Supabase 默认处理
 - [ ] **[P2]** 频道名未含 userId — RLS 已保证隔离
+
+## E2E Verification (2026-04-21)
+
+- **Round 1:** PASS
+- Realtime subscription active confirmed via console log: `[Realtime] journals subscription active`
+- Auth lifecycle: login triggers subscribe, logout triggers unsubscribe
+- 0 console errors on / route
