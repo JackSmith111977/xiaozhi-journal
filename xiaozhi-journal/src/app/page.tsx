@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { useJournalStore } from '@/store/journal';
 import { AuthGuard } from '@/components/auth-guard';
 import { MoodSelector } from '@/components/mood-selector';
@@ -180,8 +181,10 @@ function HomeContent() {
         {/* Mood Selector */}
         <MoodSelector />
 
-        {/* Journal Input */}
-        {selectedMood && <JournalInput />}
+        {/* Journal Input — slide in when mood selected */}
+        <AnimatePresence mode="wait">
+          {selectedMood && <JournalInput key={selectedMood} />}
+        </AnimatePresence>
 
         {/* AI Response Area */}
         {aiWaiting && <TypingIndicator />}

@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useJournalStore } from '@/store/journal';
-import type { Journal } from '@/types';
+import type { Journal, MoodLevel } from '@/types';
+import { MOOD_MAP } from '@/types';
 
 const DRAFT_KEY = 'journal-draft';
 
 export function JournalInput() {
-  const { selectedMood, addJournal, setAIWaiting, setSelectedMood, updateAIResponse } = useJournalStore();
+  const { selectedMood, addJournal, setAIWaiting, updateAIResponse } = useJournalStore();
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -35,7 +36,7 @@ export function JournalInput() {
       id: crypto.randomUUID(),
       content: content.trim(),
       mood: selectedMood as 1 | 2 | 3 | 4 | 5,
-      moodEmoji: ['😡', '😔', '😐', '😊', '😴'][selectedMood - 1],
+      moodEmoji: MOOD_MAP[selectedMood as MoodLevel].emoji,
       aiResponse: null,
       goldenQuote: null,
       moodLabel: null,
@@ -52,7 +53,6 @@ export function JournalInput() {
     setSaving(false);
     setShowSuccess(true);
     setShowOfflineMsg(!isOnline);
-    setSelectedMood(null);
     setContent('');
 
     if (isOnline) {
@@ -82,7 +82,7 @@ export function JournalInput() {
 
     setTimeout(() => setShowSuccess(false), 3000);
     setTimeout(() => setShowOfflineMsg(false), 5000);
-  }, [content, selectedMood, addJournal, setAIWaiting, setSelectedMood, updateAIResponse]);
+  }, [content, selectedMood, addJournal, setAIWaiting, updateAIResponse]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -123,13 +123,12 @@ export function JournalInput() {
     restore();
   }, []);
 
-  if (!selectedMood) return null;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 300 }}
+      exit={{ opacity: 0, y: 20 }}
+      transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
       className="mb-6"
     >
       <textarea
