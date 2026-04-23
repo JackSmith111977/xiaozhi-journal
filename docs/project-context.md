@@ -217,6 +217,76 @@ xiaozhi-journal/
 
 ---
 
+## 技术标准调研固化流程
+
+当需要引入新技术栈或更新现有标准时，遵循以下流程：
+
+### Step 1: 技术调研
+
+**Skill**: `bmad-technical-research` (TR)
+**Args**: `{技术名} {版本} best practices 2026`
+
+调研内容应包含：
+- 官方文档最新配置
+- Breaking changes / Migration guide
+- 最佳实践要点
+- 常见陷阱
+- 与本项目相关配置示例
+
+### Step 2: 固化标准文件
+
+**输出路径**: `_bmad-output/standards/{技术名}-best-practices.md`
+
+文件结构：
+```markdown
+---
+name: {技术名}-best-practices
+description: {技术名} {版本} 最佳实践参考
+type: reference
+---
+
+# {技术名} 最佳实践
+
+**调研日期**: YYYY-MM-DD
+**版本**: vX+
+**来源**: 官方文档链接
+
+## 1. 核心配置
+## 2. 最佳实践要点
+## 3. 常见陷阱
+## 4. 本项目已实现
+## 5. 参考链接
+```
+
+### Step 3: 更新引用
+
+**必须更新以下文件**：
+
+| 文件 | 更新内容 |
+|------|---------|
+| `docs/project-context.md` | Technology Stack 添加版本 + Reference 表格添加行 |
+| `xiaozhi-journal/AGENTS.md` | 添加 `{技术名}-agent-rules` section |
+
+### Step 4: 提交固化
+
+**Commit 模板**：
+```
+docs: 固化 {技术名} v{版本} 最佳实践
+
+调研成果固化到技术标准目录：
+- _bmad-output/standards/{技术名}-best-practices.md
+- docs/project-context.md — Technology Stack + Reference
+- xiaozhi-journal/AGENTS.md — agent rules
+
+关键要点：...
+```
+
+---
+
+**示例**：Sentry 调研固化已按此流程完成（2026-04-23）
+
+---
+
 ## Pending / Deferred Work
 
 - `resize` event listener on wave chart tooltip has no throttle/debounce — acceptable for tooltip performance
