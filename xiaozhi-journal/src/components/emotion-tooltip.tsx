@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { MOOD_MAP } from '@/types';
 
@@ -80,12 +80,12 @@ export function EmotionTooltip({
       className="pointer-events-none fixed"
       style={{ left: pos?.left ?? 0, top: pos?.top ?? 0, zIndex: 9999 }}
     >
-      <div className="bg-[#F5EDE4] border border-[#E8E0D8] rounded-xl px-3 py-2 shadow-lg max-w-[160px]">
-        <p className="text-xs text-[#8A817C] whitespace-nowrap">
+      <div className="bg-secondary border-border rounded-xl px-3 py-2 shadow-lg max-w-[160px]">
+        <p className="text-xs text-muted-foreground whitespace-nowrap">
           {new Date(date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}{' '}
           {MOOD_MAP[mood as 1 | 2 | 3 | 4 | 5]?.label}
         </p>
-        <p className="text-[11px] text-[#3D3D3D] truncate mt-0.5">
+        <p className="text-[11px] text-foreground truncate mt-0.5">
           {content.length > 20 ? content.slice(0, 20) + '...' : content}
         </p>
       </div>

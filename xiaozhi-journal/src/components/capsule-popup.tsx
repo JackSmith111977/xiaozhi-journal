@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { recordClose } from '@/lib/time-capsule';
@@ -59,14 +59,14 @@ export function CapsulePopup({ journal, title, onClose }: CapsulePopupProps) {
           <p className="text-[#8A817C] text-xs mb-2" style={{ letterSpacing: '2px' }}>
             时间胶囊
           </p>
-          <h3 className="text-xl mb-4 text-[#3D3D3D]" style={{ fontFamily: 'var(--font-noto-serif)' }}>
+          <h3 className="text-xl mb-4 text-foreground font-serif">
             {title}
           </h3>
           <div className="bg-[#F5EDE4] rounded-2xl p-4 mb-4">
             <p className="text-2xl mb-2">{journal.moodEmoji}</p>
             <p className="text-[#3D3D3D] mb-2">{journal.content}</p>
             {journal.goldenQuote && (
-              <p className="text-[#D4856A] italic text-sm" style={{ fontFamily: 'var(--font-noto-serif)' }}>
+              <p className="text-accent italic text-sm font-serif italic">
                 "{journal.goldenQuote}"
               </p>
             )}

@@ -6,16 +6,24 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "db:reset": "supabase db reset",
+    "db:push": "supabase db push",
+    "db:diff": "supabase db diff",
+    "db:gen-types": "supabase gen types typescript --local"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.38.0",
     "idb": "^8.0.3",
     "lucide-react": "^1.8.0",
+    "motion": "^12.38.0",
     "next": "16.2.3",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
@@ -34,6 +42,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
     "shadcn": "^4.2.0",
+    "supabase": "^2.92.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import { updatePassword } from '@/lib/auth';
 import { AuthGuard } from '@/components/auth-guard';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export default function CallbackPage() {
   return (
@@ -71,31 +71,27 @@ function CallbackContent() {
 
   if (validToken === null) {
     return (
-      <main className="min-h-screen bg-[#FDF8F5] flex items-center justify-center">
-        <div className="text-[#8A817C] animate-pulse">验证中...</div>
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground animate-pulse">验证中...</div>
       </main>
     );
   }
 
   if (!validToken) {
     return (
-      <main className="min-h-screen bg-[#FDF8F5] flex items-center justify-center px-6">
+      <main className="min-h-screen bg-background flex items-center justify-center px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md text-center"
         >
-          <h1
-            className="text-2xl text-[#3D3D3D] mb-4"
-            style={{ fontFamily: 'var(--font-noto-serif)' }}
-          >
+          <h1 className="text-2xl text-foreground mb-4 font-serif">
             链接无效
           </h1>
-          <p className="text-[#8A817C] mb-6">链接已过期，请重新申请重置。</p>
+          <p className="text-muted-foreground mb-6">链接已过期，请重新申请重置。</p>
           <button
             onClick={() => router.push('/auth/login')}
-            className="px-6 py-3 rounded-xl text-white font-medium"
-            style={{ backgroundColor: '#E8C4A0' }}
+            className="px-6 py-3 rounded-xl text-white font-medium bg-primary"
           >
             返回登录
           </button>
@@ -105,17 +101,14 @@ function CallbackContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F5] flex items-center justify-center px-6">
+    <main className="min-h-screen bg-background flex items-center justify-center px-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className="w-full max-w-md"
       >
-        <h1
-          className="text-2xl text-[#3D3D3D] text-center mb-8"
-          style={{ fontFamily: 'var(--font-noto-serif)' }}
-        >
+        <h1 className="text-2xl text-foreground text-center mb-8 font-serif">
           重置密码
         </h1>
 
@@ -128,11 +121,10 @@ function CallbackContent() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="请输入新密码（至少 8 位）"
               required
-              className="w-full bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors"
-              style={{ fontFamily: 'var(--font-noto-sans)' }}
+              className="w-full bg-transparent border-b-2 border-border py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors font-sans"
             />
             {!isPasswordValid && password.length > 0 && (
-              <p className="text-[#D4856A] text-xs mt-1">密码至少需要 8 位</p>
+              <p className="text-accent text-xs mt-1">密码至少需要 8 位</p>
             )}
           </div>
 
@@ -144,11 +136,10 @@ function CallbackContent() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="请再次输入密码"
               required
-              className="w-full bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors"
-              style={{ fontFamily: 'var(--font-noto-sans)' }}
+              className="w-full bg-transparent border-b-2 border-border py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors font-sans"
             />
             {!passwordsMatch && confirmPassword.length > 0 && (
-              <p className="text-[#D4856A] text-xs mt-1">两次输入的密码不一致</p>
+              <p className="text-accent text-xs mt-1">两次输入的密码不一致</p>
             )}
           </div>
 
@@ -156,8 +147,7 @@ function CallbackContent() {
           <button
             type="submit"
             disabled={!canSubmit || loading}
-            className="w-full py-3 rounded-xl text-white font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#E8C4A0' }}
+            className="w-full py-3 rounded-xl text-primary-foreground font-medium bg-primary transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {loading ? '处理中...' : '更新密码'}
           </button>
@@ -168,7 +158,7 @@ function CallbackContent() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center text-sm text-[#A8C5A0] mt-4"
+            className="text-center text-sm text-chart-1 mt-4"
           >
             {success}
           </motion.p>
@@ -177,7 +167,7 @@ function CallbackContent() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center text-sm text-[#D4856A] mt-4"
+            className="text-center text-sm text-accent mt-4"
           >
             {error}
           </motion.p>

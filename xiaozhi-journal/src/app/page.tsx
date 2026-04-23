@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { useJournalStore } from '@/store/journal';
+import { AnimatePresence } from 'motion/react';
+import { useAppStore } from '@/store';
 import { AuthGuard } from '@/components/auth-guard';
 import { MoodSelector } from '@/components/mood-selector';
 import { JournalInput } from '@/components/journal-input';
@@ -13,6 +13,7 @@ import { GoldenQuote } from '@/components/golden-quote';
 import { EmptyState } from '@/components/empty-state';
 import { CapsulePopup } from '@/components/capsule-popup';
 import { getMeta, setMeta, getPendingJournals, addJournal as dbAdd, updateJournal as dbUpdate, getJournals } from '@/lib/db';
+import Link from 'next/link';
 import { checkTimeCapsule, recordShown } from '@/lib/time-capsule';
 import { SEED_JOURNALS } from '@/lib/seed-data';
 import type { Journal, AIResponse } from '@/types';
@@ -26,7 +27,13 @@ export default function Home() {
 }
 
 function HomeContent() {
-  const { journals, loading, fetchJournals, aiWaiting, selectedMood } = useJournalStore();
+  const { journals, loading, fetchJournals, aiWaiting, selectedMood } = useAppStore((s) => ({
+    journals: s.journals,
+    loading: s.loading,
+    fetchJournals: s.fetchJournals,
+    aiWaiting: s.aiWaiting,
+    selectedMood: s.selectedMood,
+  }));
   const [initialized, setInitialized] = useState(false);
   const [capsuleJournal, setCapsuleJournal] = useState<Journal | null>(null);
   const [capsuleTitle, setCapsuleTitle] = useState<string>('');
@@ -150,8 +157,8 @@ function HomeContent() {
 
   if (!initialized || loading) {
     return (
-      <div className="min-h-screen bg-[#FDF8F5] flex items-center justify-center">
-        <div className="text-[#8A817C] animate-pulse">加载中...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground animate-pulse">加载中...</div>
       </div>
     );
   }
@@ -160,17 +167,14 @@ function HomeContent() {
   const hasAIResponse = latestJournal?.goldenQuote && !aiWaiting;
 
   return (
-    <main className="min-h-screen bg-[#FDF8F5]">
+    <main className="min-h-screen bg-background">
       <div className="max-w-[680px] mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-8">
-          <p className="text-xs text-[#8A817C] tracking-widest mb-2">
+          <p className="text-xs text-muted-foreground tracking-widest mb-2">
             {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
           </p>
-          <h1
-            className="text-3xl text-[#3D3D3D] leading-tight"
-            style={{ fontFamily: 'var(--font-noto-serif)' }}
-          >
+          <h1 className="text-3xl text-foreground leading-tight font-serif">
             Xiaozhi Journal
           </h1>
         </div>
@@ -182,8 +186,8 @@ function HomeContent() {
         <MoodSelector />
 
         {/* Journal Input — slide in when mood selected */}
-        <AnimatePresence mode="wait">
-          {selectedMood && <JournalInput key={selectedMood} />}
+        <AnimatePresence>
+          {selectedMood && <JournalInput key={selectedMood} onExitComplete={() => {}} />}
         </AnimatePresence>
 
         {/* AI Response Area */}
@@ -211,9 +215,9 @@ function HomeContent() {
         {/* History Link */}
         {journals.length > 0 && (
           <div className="text-center mt-8">
-            <a href="/history" className="text-sm text-[#D4856A] hover:underline">
+            <Link href="/history" className="text-sm text-accent hover:underline">
               查看过往记录
-            </a>
+            </Link>
           </div>
         )}
       </div>

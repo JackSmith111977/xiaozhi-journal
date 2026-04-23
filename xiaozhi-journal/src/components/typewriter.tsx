@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 
 interface TypewriterProps {
   text: string;
@@ -11,9 +11,7 @@ interface TypewriterProps {
 
 export function Typewriter({ text, speed = 50, onComplete }: TypewriterProps) {
   const [displayed, setDisplayed] = useState('');
-  const reducedMotion = useRef(
-    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  ).current;
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (reducedMotion) {

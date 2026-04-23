@@ -1,8 +1,10 @@
-import { supabase } from './supabase';
+import { supabase } from './supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Journal } from '@/types';
 
 let channel: RealtimeChannel | null = null;
+
+const VALID_STATUSES: Journal['status'][] = ['pending', 'ai_ready', 'ai_done'];
 
 /**
  * Subscribe to journals table changes (INSERT, UPDATE, DELETE).
@@ -30,7 +32,7 @@ export function subscribeJournals(onChange: (event: 'INSERT' | 'UPDATE' | 'DELET
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
-        console.log('[Realtime] journals subscription active');
+        // Subscription active
       } else if (status === 'CHANNEL_ERROR') {
         console.error('[Realtime] journals subscription failed, will retry on next auth change');
       }
@@ -45,13 +47,6 @@ export function unsubscribeJournals() {
     channel = null;
   }
 }
-
-// Map Supabase DB status to TypeScript Journal status
-const statusMap: Record<string, Journal['status']> = {
-  draft: 'pending',
-  published: 'ai_done',
-  archived: 'ai_done',
-};
 
 function mapPayloadToJournal(raw: Record<string, unknown> | undefined, _event: string): Journal {
   if (!raw) {
@@ -69,7 +64,10 @@ function mapPayloadToJournal(raw: Record<string, unknown> | undefined, _event: s
     };
   }
 
-  const dbStatus = (raw.status as string) || 'draft';
+  const dbStatus = raw.status as string | undefined;
+  const status = (VALID_STATUSES.includes(dbStatus as Journal['status']))
+    ? dbStatus as Journal['status']
+    : 'pending';
 
   return {
     id: raw.id as string,
@@ -80,7 +78,7 @@ function mapPayloadToJournal(raw: Record<string, unknown> | undefined, _event: s
     goldenQuote: (raw.golden_quote as string) || null,
     moodLabel: (raw.mood_label as string) || null,
     timestamp: (raw.created_at as string) || new Date().toISOString(),
-    status: statusMap[dbStatus] ?? 'pending',
+    status,
     shareCount: 0,
   };
 }

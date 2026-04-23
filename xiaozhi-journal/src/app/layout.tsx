@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Serif_SC, Noto_Sans_SC } from "next/font/google";
 import "./globals.css";
+import { BfcacheHandler } from "@/components/bfcache-handler";
 
 const notoSerif = Noto_Serif_SC({
   variable: "--font-noto-serif",
@@ -28,8 +29,12 @@ export default function RootLayout({
     <html
       lang="zh-CN"
       className={`${notoSerif.variable} ${notoSans.variable} h-full`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full antialiased">
+        {children}
+        <BfcacheHandler />
+      </body>
     </html>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import type { Journal } from '@/types';
 import { MOOD_MAP } from '@/types';
 import { EmotionTooltip } from '@/components/emotion-tooltip';
@@ -22,6 +22,7 @@ const SVG_HEIGHT = 160;
 export function EmotionChart({ journals }: EmotionChartProps) {
   const [hovered, setHovered] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   const last7Days = useMemo(() => {
     const now = new Date();
@@ -29,7 +30,7 @@ export function EmotionChart({ journals }: EmotionChartProps) {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = d.toISOString().split('T')[0]!;
       const dayJournals = journals.filter(
         (j) => j.timestamp.split('T')[0] === dateStr
       );
@@ -44,7 +45,7 @@ export function EmotionChart({ journals }: EmotionChartProps) {
     return (
       <div className="mb-6 py-6">
         <svg viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`} className="w-full max-w-[640px] mx-auto" style={{ height: `${SVG_HEIGHT}px` }}>
-          <line x1="0" y1={CHART_BOTTOM - CHART_HEIGHT / 2} x2={SVG_WIDTH} y2={CHART_BOTTOM - CHART_HEIGHT / 2} stroke="#E8E0D8" strokeWidth="1" strokeDasharray="4 4" />
+          <line x1="0" y1={CHART_BOTTOM - CHART_HEIGHT / 2} x2={SVG_WIDTH} y2={CHART_BOTTOM - CHART_HEIGHT / 2} stroke="var(--border)" strokeWidth="1" strokeDasharray="4 4" />
         </svg>
         <p className="text-center text-[#8A817C] text-sm mt-2">
           你的第一条日记从这里开始 ✨
@@ -66,7 +67,7 @@ export function EmotionChart({ journals }: EmotionChartProps) {
   if (points.length < 2) {
     return (
       <div className="mb-6 py-4">
-        <p className="text-center text-[#8A817C] text-sm">
+        <p className="text-center text-muted-foreground text-sm">
           再多写几天，波形图就会长出来 ✨
         </p>
       </div>
@@ -96,9 +97,9 @@ export function EmotionChart({ journals }: EmotionChartProps) {
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
+          initial={shouldReduceMotion ? { opacity: 0 } : { pathLength: 0, opacity: 0 }}
+          animate={shouldReduceMotion ? { opacity: 1 } : { pathLength: 1, opacity: 1 }}
+          transition={shouldReduceMotion ? { duration: 0.3 } : { duration: 0.8, ease: 'easeOut' }}
         />
         {points.map((point, i) => {
           const day = last7Days.find((d) => d.date === point.date);
@@ -113,9 +114,9 @@ export function EmotionChart({ journals }: EmotionChartProps) {
                 cy={point.y}
                 r={isHovered ? 6 : 4}
                 fill={COLORS[point.mood - 1] || '#8A817C'}
-                initial={{ scale: 0 }}
-                animate={{ scale: isHovered ? 1.5 : 1 }}
-                transition={{ type: 'spring', delay: i * 0.1 }}
+                initial={shouldReduceMotion ? undefined : { scale: 0 }}
+                animate={shouldReduceMotion ? undefined : { scale: isHovered ? 1.5 : 1 }}
+                transition={shouldReduceMotion ? undefined : { type: 'spring', delay: i * 0.1 }}
               />
               <text x={point.x} y={point.y - 14} textAnchor="middle" fontSize="12">
                 {MOOD_MAP[point.mood as 1 | 2 | 3 | 4 | 5]?.emoji}

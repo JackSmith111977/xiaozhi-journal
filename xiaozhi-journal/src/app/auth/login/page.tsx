@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signUp, signIn, resetPassword } from '@/lib/auth';
 import { AuthGuard } from '@/components/auth-guard';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'motion/react';
 
 type Mode = 'register' | 'login' | 'reset';
 
@@ -71,6 +71,8 @@ function AuthPageContent() {
       const message = err instanceof Error ? err.message : (mode === 'register' ? '注册失败' : '登录失败');
       if (mode === 'register' && (message.includes('already registered') || message.includes('User already registered'))) {
         setError('这个邮箱已经被注册了，试试登录？');
+      } else if (mode === 'register' && message.includes('is invalid')) {
+        setError('邮箱格式不正确，请检查后重试');
       } else {
         setError(mode === 'login' ? '邮箱或密码不正确' : message);
       }
@@ -80,41 +82,38 @@ function AuthPageContent() {
   };
 
   return (
-    <main className="min-h-screen bg-[#FDF8F5] flex items-center justify-center px-6">
+    <main className="min-h-screen bg-background flex items-center justify-center px-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className="w-full max-w-md"
       >
-        <h1
-          className="text-2xl text-[#3D3D3D] text-center mb-8"
-          style={{ fontFamily: 'var(--font-noto-serif)' }}
-        >
+        <h1 className="text-2xl text-foreground text-center mb-8 font-serif">
           {mode === 'reset' ? '重置密码' : 'Xiaozhi Journal'}
         </h1>
 
         {/* Mode toggle (hidden in reset mode) */}
         {mode !== 'reset' && (
-          <div className="flex mb-8 border-b border-[#E8E0D8]">
+          <div className="flex mb-8 border-b border-border">
             <button
               type="button"
-              onClick={() => setMode('register')}
+              onClick={() => { setMode('register'); setError(null); setSuccess(null); }}
               className={`flex-1 pb-2 text-sm font-medium transition-colors ${
                 mode === 'register'
-                  ? 'text-[#D4856A] border-b-2 border-[#D4856A]'
-                  : 'text-[#8A817C]'
+                  ? 'text-accent border-b-2 border-accent'
+                  : 'text-muted-foreground'
               }`}
             >
               注册
             </button>
             <button
               type="button"
-              onClick={() => setMode('login')}
+              onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
               className={`flex-1 pb-2 text-sm font-medium transition-colors ${
                 mode === 'login'
-                  ? 'text-[#D4856A] border-b-2 border-[#D4856A]'
-                  : 'text-[#8A817C]'
+                  ? 'text-accent border-b-2 border-accent'
+                  : 'text-muted-foreground'
               }`}
             >
               登录
@@ -131,8 +130,7 @@ function AuthPageContent() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder={mode === 'reset' ? '请输入注册邮箱' : '请输入邮箱'}
               required
-              className="w-full bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors"
-              style={{ fontFamily: 'var(--font-noto-sans)' }}
+              className="w-full bg-transparent border-b-2 border-border py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors font-sans"
             />
           </div>
 
@@ -145,11 +143,10 @@ function AuthPageContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="请输入密码（至少 8 位）"
                 required
-                className="w-full bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors"
-                style={{ fontFamily: 'var(--font-noto-sans)' }}
+                className="w-full bg-transparent border-b-2 border-border py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors font-sans"
               />
               {mode === 'register' && !isPasswordValid && password.length > 0 && (
-                <p className="text-[#D4856A] text-xs mt-1">密码至少需要 8 位</p>
+                <p className="text-accent text-xs mt-1">密码至少需要 8 位</p>
               )}
             </div>
           )}
@@ -161,9 +158,9 @@ function AuthPageContent() {
                 type="checkbox"
                 checked={ageConfirmed}
                 onChange={(e) => setAgeConfirmed(e.target.checked)}
-                className="w-4 h-4 accent-[#D4856A]"
+                className="w-4 h-4 accent-accent"
               />
-              <span className="text-sm text-[#3D3D3D]">我已年满 18 岁</span>
+              <span className="text-sm text-foreground">我已年满 18 岁</span>
             </label>
           )}
 
@@ -171,8 +168,7 @@ function AuthPageContent() {
           <button
             type="submit"
             disabled={!canSubmit || loading}
-            className="w-full py-3 rounded-xl text-white font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#E8C4A0' }}
+            className="w-full py-3 rounded-xl text-primary-foreground font-medium bg-primary transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {loading ? '处理中...' : mode === 'register' ? '注册' : mode === 'reset' ? '发送重置链接' : '登录'}
           </button>
@@ -182,8 +178,8 @@ function AuthPageContent() {
             <div className="text-center mt-4">
               <button
                 type="button"
-                onClick={() => setMode('reset')}
-                className="text-xs text-[#D4856A] hover:underline"
+                onClick={() => { setMode('reset'); setError(null); setSuccess(null); }}
+                className="text-xs text-accent hover:underline"
               >
                 忘记密码？
               </button>
@@ -195,8 +191,8 @@ function AuthPageContent() {
             <div className="text-center mt-4">
               <button
                 type="button"
-                onClick={() => setMode('login')}
-                className="text-xs text-[#D4856A] hover:underline"
+                onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
+                className="text-xs text-accent hover:underline"
               >
                 返回登录
               </button>
@@ -209,7 +205,7 @@ function AuthPageContent() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center text-sm text-[#A8C5A0] mt-4"
+            className="text-center text-sm text-chart-1 mt-4"
           >
             {success}
           </motion.p>
@@ -220,12 +216,12 @@ function AuthPageContent() {
             animate={{ opacity: 1 }}
             className="text-center mt-4"
           >
-            <p className="text-sm text-[#D4856A]">{error}</p>
+            <p className="text-sm text-accent">{error}</p>
             {error.includes('已经') && (
               <button
                 type="button"
-                onClick={() => setMode('login')}
-                className="text-xs text-[#D4856A] hover:underline mt-1"
+                onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
+                className="text-xs text-accent hover:underline mt-1"
               >
                 去登录
               </button>

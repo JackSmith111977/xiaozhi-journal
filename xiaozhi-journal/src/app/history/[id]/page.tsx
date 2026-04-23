@@ -77,7 +77,7 @@ export default function JournalDetail() {
 
         {/* Journal Content */}
         <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
-          <p className="text-[#3D3D3D] leading-relaxed text-base" style={{ fontFamily: 'var(--font-noto-sans)' }}>
+          <p className="text-foreground leading-relaxed text-base font-sans">
             {journal.content}
           </p>
         </div>

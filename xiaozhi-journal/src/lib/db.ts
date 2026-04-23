@@ -1,17 +1,29 @@
-import { openDB, type IDBPDatabase } from 'idb';
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Journal, AppMeta } from '@/types';
-import { supabase } from './supabase';
+import { supabase } from './supabase/client';
 
 const DB_NAME = 'xiaozhi-journal';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
-let dbPromise: Promise<IDBPDatabase> | null = null;
-let dbInstance: IDBPDatabase | null = null;
+interface XiaozhiDB extends DBSchema {
+  journals: {
+    key: string;
+    value: Journal;
+    indexes: { timestamp: string; status: Journal['status'] };
+  };
+  appMeta: {
+    key: string;
+    value: { key: string; value: unknown };
+  };
+}
 
-function getDB() {
-  if (dbInstance) return Promise.resolve(dbInstance);
+let dbPromise: Promise<IDBPDatabase<XiaozhiDB>> | null = null;
+let dbInstance: IDBPDatabase<XiaozhiDB> | null = null;
+
+async function getDB(): Promise<IDBPDatabase<XiaozhiDB>> {
+  if (dbInstance) return dbInstance;
   if (!dbPromise) {
-    dbPromise = openDB(DB_NAME, DB_VERSION, {
+    dbPromise = openDB<XiaozhiDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
         if (!db.objectStoreNames.contains('journals')) {
           const journalStore = db.createObjectStore('journals', { keyPath: 'id' });
@@ -22,10 +34,10 @@ function getDB() {
           db.createObjectStore('appMeta', { keyPath: 'key' });
         }
       },
-      blocked(currentVersion, blockedVersion) {
-        console.warn(`[DB] Blocked upgrading from v${currentVersion} to v${blockedVersion}`);
+      blocked(_currentVersion, _blockedVersion) {
+        // Version upgrade blocked by open connections
       },
-      blocking(currentVersion, blockedVersion) {
+      blocking(_currentVersion, _blockedVersion) {
         if (dbInstance) {
           dbInstance.close();
           dbInstance = null;
@@ -44,7 +56,7 @@ function getDB() {
       throw err;
     });
   }
-  return dbPromise;
+  return dbPromise!;
 }
 
 export async function addJournal(journal: Journal) {
@@ -90,23 +102,24 @@ export async function deleteJournal(id: string) {
   await db.delete('journals', id);
 }
 
-export async function markSynced(id: string) {
+export async function markSynced(ids: string[]) {
+  if (ids.length === 0) return;
   const db = await getDB();
-  const journal = await db.get('journals', id);
-  if (journal) {
-    const updated = { ...journal, status: 'ai_done' as const };
-    await db.put('journals', updated);
+  const tx = db.transaction('journals', 'readwrite');
+  for (const id of ids) {
+    const journal = await tx.store.get(id);
+    if (journal) {
+      await tx.store.put({ ...journal, status: 'synced' });
+    }
   }
+  await tx.done;
 }
 
 export async function syncToSupabase(journals: Journal[]) {
   if (journals.length === 0) return;
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    console.warn('[CacheProvider] syncToSupabase skipped: user not logged in');
-    return;
-  }
+  if (!user) return;
 
   const records = journals.map(j => ({
     id: j.id,
@@ -125,12 +138,7 @@ export async function syncToSupabase(journals: Journal[]) {
     .from('journals')
     .upsert(records);
 
-  if (error) {
-    console.warn('[CacheProvider] syncToSupabase failed:', error.message);
-    throw error;
-  }
+  if (error) throw error;
 
-  for (const j of journals) {
-    await markSynced(j.id);
-  }
+  await markSynced(journals.map(j => j.id));
 }

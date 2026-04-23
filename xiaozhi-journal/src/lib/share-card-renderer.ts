@@ -72,7 +72,7 @@ function wrapText(
     const metrics = ctx.measureText(testLine);
     if (metrics.width > maxWidth && i > 0) {
       ctx.fillText(line, x, currentY);
-      line = chars[i];
+      line = chars[i]!;
       currentY += lineHeight;
     } else {
       line = testLine;

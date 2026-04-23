@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useCallback, useRef } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import type { Journal } from '@/types';
 import { ShareCard } from '@/components/share-card';
 import { renderShareCardToCanvas } from '@/lib/share-card-renderer';
@@ -18,15 +18,11 @@ type ShareAction = 'copy' | 'download' | 'copyText';
 type ShareFeedback = { action: ShareAction; message: string } | null;
 
 export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProps) {
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const reducedMotion = useReducedMotion();
   const [flipped, setFlipped] = useState(false);
   const [feedback, setFeedback] = useState<ShareFeedback>(null);
   const [loading, setLoading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  }, []);
 
   const showFeedback = useCallback((action: ShareAction, message: string) => {
     setFeedback({ action, message });
@@ -153,12 +149,11 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
       >
         {/* FRONT: Original golden quote card */}
         <div
-          className="bg-[#F5EDE4] rounded-3xl py-6 px-6 shadow-md relative"
-          style={{ borderLeft: '3px solid #D4856A', backfaceVisibility: 'hidden' }}
+          className="bg-secondary rounded-3xl py-6 px-6 shadow-md relative border-l-[3px] border-accent"
         >
           <button
             onClick={handleShare}
-            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#E8E0D8] transition-colors text-[#8A817C] focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2"
+            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
             aria-label="分享金句"
             title="分享金句"
           >
@@ -170,13 +165,12 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
           </button>
 
           <blockquote
-            className="text-xl italic leading-relaxed text-[#3D3D3D] pr-8"
-            style={{ fontFamily: 'var(--font-noto-serif)', fontStyle: 'italic' }}
+            className="text-xl italic leading-relaxed text-foreground pr-8 font-serif italic"
           >
             &ldquo;{quote}&rdquo;
           </blockquote>
           {date && (
-            <p className="text-xs text-[#8A817C] mt-3 text-right">
+            <p className="text-xs text-muted-foreground mt-3 text-right">
               {new Date(date).toLocaleDateString('zh-CN')}
             </p>
           )}
@@ -203,8 +197,8 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
                 disabled={loading}
                 className={`flex-1 py-2.5 px-2 border rounded-xl text-[13px] flex flex-col items-center gap-1 transition-all
                   ${feedback?.action === 'copy'
-                    ? 'bg-[#D4856A] text-white border-[#D4856A]'
-                    : 'bg-white border-[#E8E0D8] text-[#3D3D3D] hover:bg-[#F5EDE4] hover:border-[#D4856A]'
+                    ? 'bg-accent text-white border-accent'
+                    : 'bg-white border-border text-foreground hover:bg-secondary hover:border-accent'
                   } disabled:opacity-50`}
               >
                 <span className="text-lg">📋</span>
@@ -215,8 +209,8 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
                 disabled={loading}
                 className={`flex-1 py-2.5 px-2 border rounded-xl text-[13px] flex flex-col items-center gap-1 transition-all
                   ${feedback?.action === 'download'
-                    ? 'bg-[#D4856A] text-white border-[#D4856A]'
-                    : 'bg-white border-[#E8E0D8] text-[#3D3D3D] hover:bg-[#F5EDE4] hover:border-[#D4856A]'
+                    ? 'bg-accent text-white border-accent'
+                    : 'bg-white border-border text-foreground hover:bg-secondary hover:border-accent'
                   } disabled:opacity-50`}
               >
                 <span className="text-lg">💾</span>
@@ -227,8 +221,8 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
                 disabled={loading}
                 className={`flex-1 py-2.5 px-2 border rounded-xl text-[13px] flex flex-col items-center gap-1 transition-all
                   ${feedback?.action === 'copyText'
-                    ? 'bg-[#D4856A] text-white border-[#D4856A]'
-                    : 'bg-white border-[#E8E0D8] text-[#3D3D3D] hover:bg-[#F5EDE4] hover:border-[#D4856A]'
+                    ? 'bg-accent text-white border-accent'
+                    : 'bg-white border-border text-foreground hover:bg-secondary hover:border-accent'
                   } disabled:opacity-50`}
               >
                 <span className="text-lg">📝</span>
@@ -240,7 +234,7 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
             <div className="text-center mt-2">
               <button
                 onClick={handleBack}
-                className="py-2 px-6 text-[13px] text-[#D4856A] hover:underline focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2 rounded"
+                className="py-2 px-6 text-[13px] text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded"
               >
                 ← 返回日记
               </button>

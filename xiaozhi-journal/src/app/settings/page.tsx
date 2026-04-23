@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth';
 import { exportUserData } from '@/lib/export';
 import { deleteAccount } from '@/lib/account';
-import { useAuthStore } from '@/store/auth';
+import { useAppStore, initializeAuth } from '@/store';
 import { AuthGuard } from '@/components/auth-guard';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface Profile {
   nickname: string;
@@ -25,7 +25,7 @@ export default function SettingsPage() {
 
 function SettingsContent() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user } = useAppStore((s) => ({ user: s.user }));
   const [profile, setProfile] = useState<Profile | null>(null);
   const [nickname, setNickname] = useState('');
   const [savingNickname, setSavingNickname] = useState(false);
@@ -46,6 +46,16 @@ function SettingsContent() {
       if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
     };
   }, []);
+
+  // Close delete modal on Escape key
+  useEffect(() => {
+    if (!showDeleteConfirm) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !deleting) setShowDeleteConfirm(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => { window.removeEventListener('keydown', handleKeyDown); };
+  }, [showDeleteConfirm, deleting]);
 
   // Load profile data
   useEffect(() => {
@@ -107,9 +117,9 @@ function SettingsContent() {
       setProfile((prev) => (prev ? { ...prev, nickname: trimmed } : null));
 
       // P0 fix: Sync Zustand store with updated nickname
-      const currentUser = useAuthStore.getState().user;
+      const currentUser = useAppStore.getState().user;
       if (currentUser) {
-        useAuthStore.getState().setUser({
+        useAppStore.getState().setUser({
           ...currentUser,
           user_metadata: { ...(currentUser.user_metadata ?? {}), nickname: trimmed },
         });
@@ -203,7 +213,7 @@ function SettingsContent() {
     setSigningOut(true);
     try {
       await signOut();
-      useAuthStore.getState().setUser(null);
+      useAppStore.getState().setUser(null);
       router.push('/auth/login');
     } catch {
       setMessage({ type: 'error', text: '退出失败，请稍后再试' });
@@ -219,7 +229,7 @@ function SettingsContent() {
     try {
       await deleteAccount();
       setShowDeleteConfirm(false);
-      useAuthStore.getState().setUser(null);
+      useAppStore.getState().setUser(null);
       router.push('/auth/login');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '删除失败，请稍后再试';
@@ -232,28 +242,25 @@ function SettingsContent() {
   // Cache-busting: only re-fetch when avatar_url actually changes
   const avatarUrl = useMemo(() => {
     if (!profile?.avatar_url) return null;
-    return `${supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}?t=${Date.now()}`;
+    return supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl;
   }, [profile?.avatar_url]);
 
   return (
-    <main className="min-h-screen bg-[#FDF8F5] px-6 py-12">
+    <main className="min-h-screen bg-background px-6 py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className="mx-auto max-w-md"
       >
-        <h1
-          className="text-2xl text-[#3D3D3D] text-center mb-8"
-          style={{ fontFamily: 'var(--font-noto-serif)' }}
-        >
+        <h1 className="text-2xl text-foreground text-center mb-8 font-serif">
           设置
         </h1>
 
         {/* Avatar section */}
-        <div className="flex items-center gap-6 mb-8 pb-8 border-b border-[#E8E0D8]">
+        <div className="flex items-center gap-6 mb-8 pb-8 border-b border-border">
           <div
-            className="w-20 h-20 rounded-full bg-[#E8E0D8] flex items-center justify-center overflow-hidden flex-shrink-0"
+            className="w-20 h-20 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
           >
             {avatarUrl ? (
               <img
@@ -262,7 +269,7 @@ function SettingsContent() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-3xl text-[#8A817C]">
+              <span className="text-3xl text-muted-foreground">
                 {(profile?.nickname || user?.email || 'U').charAt(0).toUpperCase()}
               </span>
             )}
@@ -272,12 +279,11 @@ function SettingsContent() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={savingAvatar}
-              className="px-4 py-2 rounded-xl text-sm text-white font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#E8C4A0' }}
+              className="px-4 py-2 rounded-xl text-sm text-primary-foreground font-medium bg-primary transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             >
               更换头像
             </button>
-            <p className="text-xs text-[#8A817C] mt-1">JPG/PNG，不超过 2MB</p>
+            <p className="text-xs text-muted-foreground mt-1">JPG/PNG，不超过 2MB</p>
           </div>
           <input
             ref={fileInputRef}
@@ -290,18 +296,18 @@ function SettingsContent() {
 
         {/* Profile info */}
         <div className="mb-6">
-          <label className="text-sm text-[#8A817C] mb-1 block">邮箱</label>
-          <p className="text-[#3D3D3D]" style={{ fontFamily: 'var(--font-noto-sans)' }}>
+          <label className="text-sm text-muted-foreground mb-1 block">邮箱</label>
+          <p className="text-foreground font-sans">
             {user?.email}
           </p>
         </div>
 
         {/* Nickname edit */}
         {loadingProfile ? (
-          <div className="mb-8 text-[#8A817C] animate-pulse">加载个人信息中...</div>
+          <div className="mb-8 text-muted-foreground animate-pulse">加载个人信息中...</div>
         ) : (
           <div className="mb-8">
-            <label className="text-sm text-[#8A817C] mb-1 block">昵称</label>
+            <label className="text-sm text-muted-foreground mb-1 block">昵称</label>
             <div className="flex gap-3">
               <input
                 type="text"
@@ -309,15 +315,13 @@ function SettingsContent() {
                 onChange={(e) => setNickname(e.target.value)}
                 maxLength={20}
                 placeholder="请输入昵称（1-20 字符）"
-                className="flex-1 bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors"
-                style={{ fontFamily: 'var(--font-noto-sans)' }}
+                className="flex-1 bg-transparent border-b-2 border-border py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors font-sans"
               />
               <button
                 type="button"
                 onClick={handleSaveNickname}
                 disabled={savingNickname}
-                className="px-4 py-2 rounded-xl text-sm text-white font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ backgroundColor: '#A8C5A0' }}
+                className="px-4 py-2 rounded-xl text-sm text-white font-medium bg-chart-1 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {savingNickname ? '保存中...' : '保存'}
               </button>
@@ -326,13 +330,12 @@ function SettingsContent() {
         )}
 
         {/* Sign out & Danger zone */}
-        <div className="pt-8 border-t border-[#E8E0D8] space-y-3">
+        <div className="pt-8 border-t border-border space-y-3">
           <button
             type="button"
             onClick={handleExport}
             disabled={exporting}
-            className="w-full py-3 rounded-xl text-sm font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#A8C5A0', color: '#fff' }}
+            className="w-full py-3 rounded-xl text-sm font-medium bg-chart-1 text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {exporting ? '正在准备你的数据，请稍候...' : '导出数据'}
           </button>
@@ -340,21 +343,19 @@ function SettingsContent() {
             type="button"
             onClick={handleSignOut}
             disabled={signingOut}
-            className="w-full py-3 rounded-xl text-sm font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#D4856A', color: '#fff' }}
+            className="w-full py-3 rounded-xl text-sm font-medium bg-accent text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {signingOut ? '退出中...' : '退出登录'}
           </button>
         </div>
 
         {/* Delete account danger zone */}
-        <div className="pt-8 border-t border-[#E8E0D8]">
+        <div className="pt-8 border-t border-border">
           <button
             type="button"
             onClick={() => setShowDeleteConfirm(true)}
             disabled={deleting}
-            className="w-full py-3 rounded-xl text-sm font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed border-2 border-[#D4856A]"
-            style={{ backgroundColor: 'transparent', color: '#D4856A' }}
+            className="w-full py-3 rounded-xl text-sm font-medium text-accent border-2 border-accent transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
             删除账户
           </button>
@@ -371,19 +372,16 @@ function SettingsContent() {
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-[#FDF8F5] rounded-2xl p-6 max-w-sm w-full"
+              className="bg-background rounded-2xl p-6 max-w-sm w-full"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2
-                className="text-lg text-[#3D3D3D] mb-3"
-                style={{ fontFamily: 'var(--font-noto-serif)' }}
-              >
+              <h2 className="text-lg text-foreground mb-3 font-serif">
                 确认删除账户？
               </h2>
-              <p className="text-sm text-[#8A817C] mb-4" style={{ fontFamily: 'var(--font-noto-sans)' }}>
+              <p className="text-sm text-muted-foreground mb-4 font-sans">
                 删除后 30 天内数据将被彻底清除，此操作不可撤销。
               </p>
-              <p className="text-sm text-[#8A817C] mb-4" style={{ fontFamily: 'var(--font-noto-sans)' }}>
+              <p className="text-sm text-muted-foreground mb-4 font-sans">
                 请输入「<strong>确认删除</strong>」以继续：
               </p>
               <input
@@ -391,8 +389,7 @@ function SettingsContent() {
                 value={deleteConfirmInput}
                 onChange={(e) => setDeleteConfirmInput(e.target.value)}
                 placeholder="确认删除"
-                className="w-full bg-transparent border-b-2 border-[#E8E0D8] py-2 text-[#3D3D3D] placeholder-[#8A817C] focus:outline-none focus:border-[#D4856A] transition-colors mb-6"
-                style={{ fontFamily: 'var(--font-noto-sans)' }}
+                className="w-full bg-transparent border-b-2 border-border py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors mb-6 font-sans"
                 disabled={deleting}
               />
               <div className="flex gap-3">
@@ -400,8 +397,7 @@ function SettingsContent() {
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={deleting}
-                  className="flex-1 py-3 rounded-xl text-sm font-medium transition-opacity disabled:opacity-40"
-                  style={{ backgroundColor: '#E8E0D8', color: '#3D3D3D' }}
+                  className="flex-1 py-3 rounded-xl text-sm font-medium bg-muted text-foreground transition-opacity disabled:opacity-40"
                 >
                   取消
                 </button>
@@ -409,8 +405,7 @@ function SettingsContent() {
                   type="button"
                   onClick={handleDeleteAccount}
                   disabled={deleteConfirmInput.trim() !== '确认删除' || deleting}
-                  className="flex-1 py-3 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: '#D4856A' }}
+                  className="flex-1 py-3 rounded-xl text-sm font-medium text-white bg-accent transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {deleting ? '删除中...' : '确认删除'}
                 </button>
@@ -425,7 +420,7 @@ function SettingsContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className={`text-center text-sm mt-4 ${
-              message.type === 'success' ? 'text-[#A8C5A0]' : 'text-[#D4856A]'
+              message.type === 'success' ? 'text-chart-1' : 'text-accent'
             }`}
           >
             {message.text}

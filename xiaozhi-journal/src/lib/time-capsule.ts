@@ -118,7 +118,7 @@ export async function recordClose(): Promise<boolean> {
  */
 export async function recordShown(journalId: string): Promise<void> {
   const state = await loadState();
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0]!;
 
   state.lastShownDate = today;
 
@@ -141,7 +141,7 @@ export async function recordShown(journalId: string): Promise<void> {
  * Check if frequency control allows showing a capsule today.
  */
 function canShow(state: CapsuleState): boolean {
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0]!;
 
   // Check 24h cooldown
   if (state.lastShownDate === today) return false;
@@ -207,7 +207,7 @@ export function findTimeCapsule(
         (j) => Math.abs(j.mood - newJournal.mood) <= 1,
       );
       const pool = moodMatched.length > 0 ? moodMatched : candidates;
-      const selected = pool[Math.floor(Math.random() * pool.length)];
+      const selected = pool[Math.floor(Math.random() * pool.length)]!;
       const diff = diffInDays(newDate, new Date(selected.timestamp));
 
       return {

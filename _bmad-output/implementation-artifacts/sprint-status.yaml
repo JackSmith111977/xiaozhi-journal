@@ -1,5 +1,5 @@
-# generated: 2026-04-17
-# last_updated: 2026-04-17
+# generated: 2026-04-22
+# last_updated: 2026-04-22
 # project: Xiaozhi Journal
 # project_key: NOKEY
 # tracking_system: file-system
@@ -34,14 +34,29 @@
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-04-17
-last_updated: 2026-04-17
+generated: 2026-04-22
+last_updated: 2026-04-22
 project: Xiaozhi Journal
 project_key: NOKEY
 tracking_system: file-system
 story_location: D:/WorkPlace/VibeCoding/Xiaozhi Journal/_bmad-output/implementation-artifacts
 
 development_status:
+  # ===========================
+  # Epic 0: 技术标准对齐（重构）
+  # ===========================
+
+  # Epic 0: 技术标准对齐
+  epic-0: done
+  0-a-motion-v12-migration: done
+  0-b-tailwind-token-governance: done
+  0-c-supabase-ssr-separation: done
+  0-d-zustand-v5-compliance: done
+  0-e-indexeddb-typescript-fix: done
+  0-f-nextjs-16-infrastructure: done
+  0-g-react-19-cleanup: done
+  epic-0-retrospective: done
+
   # ===========================
   # Phase 1: Web 商业基础（P0）
   # ===========================
@@ -71,10 +86,10 @@ development_status:
   epic-9-retrospective: done
 
   # Epic 2: 3 秒心情打卡
-  epic-2: backlog
-  2-1-mood-emoji-selector: backlog
-  2-2-journal-input-save: backlog
-  epic-2-retrospective: optional
+  epic-2: done
+  2-1-mood-emoji-selector: done
+  2-2-journal-input-save: done
+  epic-2-retrospective: done
 
   # Epic 3: AI 温暖回应
   epic-3: backlog
@@ -122,7 +137,37 @@ development_status:
   epic-10-retrospective: optional
 
   # ===========================
-  # Phase 3: 多端扩展（P1）
+  # Phase 2.5: 基础设施扩展（P0）
+  # ===========================
+
+  # Epic 13: 部署与运维（扩展）
+  epic-13: in-progress
+  13-1-cicd-pipeline: backlog
+  13-2-error-monitoring: backlog
+  13-3-smtp-email-service: backlog
+  13-4-transactional-email-system: backlog
+  13-5-domain-ssl-config: backlog
+  13-6-database-backup-strategy: backlog
+  epic-13-retrospective: optional
+
+  # Epic 14: 支付基础设施
+  epic-14: backlog
+  14-1-payment-channel-integration: backlog
+  14-2-pricing-page: backlog
+  14-3-paywall-usage-state-machine: backlog
+  14-4-admin-dashboard: backlog
+  epic-14-retrospective: optional
+
+  # Epic 15: 开发体验治理
+  epic-15: backlog
+  15-1-automated-test-framework: backlog
+  15-2-pre-commit-hooks: backlog
+  15-3-code-standards: backlog
+  15-4-github-actions-ci: backlog
+  epic-15-retrospective: optional
+
+  # ===========================
+  # Phase 3: 多端扩展 + UX 治理（P1）
   # ===========================
 
   # Epic 11: 多平台覆盖
@@ -132,18 +177,19 @@ development_status:
   11-3-wechat-oauth-login: backlog
   epic-11-retrospective: optional
 
-  # ===========================
-  # Phase 4: 运营基础（P1）
-  # ===========================
-
-  # Epic 12: 成本与行为监控
+  # Epic 12: 成本与行为监控（扩展）
   epic-12: backlog
   12-1-user-behavior-tracking: backlog
   12-2-ai-cost-dashboard: backlog
+  12-3-ai-daily-limit-intercept: backlog
+  12-4-aggregation-view-analytics: backlog
   epic-12-retrospective: optional
 
-  # Epic 13: 部署与运维
-  epic-13: backlog
-  13-1-cicd-pipeline: backlog
-  13-2-error-monitoring: backlog
-  epic-13-retrospective: optional
+  # Epic 16: UX 治理
+  epic-16: backlog
+  16-1-design-token-governance: backlog
+  16-2-empty-state-components: backlog
+  16-3-onboarding-flow: backlog
+  16-4-feedback-components-unified: backlog
+  16-5-component-documentation: backlog
+  epic-16-retrospective: optional

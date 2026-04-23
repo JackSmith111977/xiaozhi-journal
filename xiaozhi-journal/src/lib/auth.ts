@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase } from './supabase/client'
 
 export async function signUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({
@@ -6,6 +6,10 @@ export async function signUp(email: string, password: string) {
     password,
   })
   if (error) throw error
+  // Auto sign-in after registration regardless of email confirmation setting
+  if (data.user && !data.session) {
+    await supabase.auth.signInWithPassword({ email, password })
+  }
   return data
 }
 

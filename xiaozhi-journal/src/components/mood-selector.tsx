@@ -1,8 +1,8 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'motion/react';
 import { MOOD_MAP, type MoodLevel } from '@/types';
-import { useJournalStore } from '@/store/journal';
+import { useAppStore } from '@/store';
 
 const moods = [1, 2, 3, 4, 5] as MoodLevel[];
 
@@ -70,7 +70,10 @@ function MoodSvg({ mood, selected }: { mood: MoodLevel; selected: boolean }) {
 }
 
 export function MoodSelector() {
-  const { selectedMood, setSelectedMood } = useJournalStore();
+  const { selectedMood, setSelectedMood } = useAppStore((s) => ({
+    selectedMood: s.selectedMood,
+    setSelectedMood: s.setSelectedMood,
+  }));
   const shouldReduceMotion = useReducedMotion();
 
   // Hover/tap: tween — instant response, no bounce
@@ -97,7 +100,7 @@ export function MoodSelector() {
 
   return (
     <div className="mb-4">
-      <h2 className="text-center text-[26px] text-[#8A817C] mb-3" style={{ fontFamily: 'var(--font-noto-serif)' }}>
+      <h2 className="text-center text-[26px] text-muted-foreground mb-3 font-serif">
         今天心情怎么样？
       </h2>
       <div className="flex justify-center gap-4" role="radiogroup" aria-label="心情选择">
@@ -114,8 +117,8 @@ export function MoodSelector() {
               whileTap={tapAnim}
               animate={shouldReduceMotion ? undefined : (isSelected ? { scale: 1.2 } : { scale: 1 })}
               transition={springTransition}
-              className={`w-14 h-14 rounded-full flex items-center justify-center leading-none transition-all duration-200 focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2
-                ${isSelected ? 'bg-[#D4856A] shadow-md' : 'bg-white border border-[#E8E0D8]'}`}
+              className={`w-14 h-14 rounded-full flex items-center justify-center leading-none transition-all duration-200 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2
+                ${isSelected ? 'bg-accent shadow-md' : 'bg-white border border-border'}`}
               style={{
                 opacity: selectedMood && !isSelected ? 0.5 : 1,
               }}

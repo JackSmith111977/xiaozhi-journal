@@ -118,7 +118,7 @@ export async function callAI(content: string, mood: MoodLevel): Promise<AIRespon
 function getFallbackResponse(mood: MoodLevel): AIResponse {
   return {
     response: '小知暂时不在，但你的感受已经保存好了。稍后再来看看想对你说什么吧~',
-    goldenQuote: FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)],
+    goldenQuote: FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)]!,
     moodLabel: '本地',
     fromFallback: true,
   };

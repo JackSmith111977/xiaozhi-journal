@@ -9,7 +9,7 @@ export interface Journal {
   goldenQuote: string | null;
   moodLabel: string | null;
   timestamp: string;
-  status: 'pending' | 'ai_ready' | 'ai_done';
+  status: 'pending' | 'synced' | 'ai_ready' | 'ai_done';
   shareCount: number;
 }
 
@@ -25,10 +25,10 @@ export interface AppMeta {
   value: unknown;
 }
 
-export const MOOD_MAP: Record<MoodLevel, { emoji: string; label: string }> = {
+export const MOOD_MAP = {
   1: { emoji: '😡', label: '烦躁' },
   2: { emoji: '😔', label: '难过' },
   3: { emoji: '😐', label: '平静' },
   4: { emoji: '😊', label: '开心' },
   5: { emoji: '😴', label: '疲惫' },
-};
+} as const satisfies Record<MoodLevel, { emoji: string; label: string }>;

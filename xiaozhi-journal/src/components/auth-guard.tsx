@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/auth';
+import { useAppStore, initializeAuth } from '@/store';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -12,33 +12,34 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, requireAuth = true }: AuthGuardProps) {
-  const { user, loading, initialize } = useAuthStore();
+  const { user, authLoading } = useAppStore((s) => ({
+    user: s.user,
+    authLoading: s.authLoading,
+  }));
   const router = useRouter();
 
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    initializeAuth();
+  }, [requireAuth]);
 
   useEffect(() => {
-    if (loading) return;
+    if (authLoading) return;
 
     if (requireAuth && !user) {
       router.replace('/auth/login');
     } else if (!requireAuth && user) {
       router.replace('/');
     }
-  }, [user, loading, requireAuth, router]);
+  }, [user, authLoading, requireAuth, router]);
 
-  // Show loading state while checking auth
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-[#FDF8F5] flex items-center justify-center">
-        <div className="text-[#8A817C] animate-pulse">加载中...</div>
+        <div className="text-muted-foreground animate-pulse">加载中...</div>
       </div>
     );
   }
 
-  // Don't render children if auth condition isn't met
   if (requireAuth && !user) return null;
   if (!requireAuth && user) return null;
 

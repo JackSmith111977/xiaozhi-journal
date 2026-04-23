@@ -1,6 +1,8 @@
-import { supabase } from './supabase';
+import { supabase } from './supabase/client';
+import { getPendingJournals } from './db';
 
 export interface ExportData {
+  version: '1.0';
   profile: {
     nickname: string;
     email: string;
@@ -25,6 +27,7 @@ const PAGE_SIZE = 1000;
 
 /**
  * Fetch all journals (paginated) and profile from Supabase, export as JSON download.
+ * Also includes pending (unsynced) journals from IndexedDB.
  */
 export async function exportUserData(): Promise<ExportData> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -32,12 +35,12 @@ export async function exportUserData(): Promise<ExportData> {
     throw new Error('未登录，无法导出数据');
   }
 
-  // Fetch profile (with warning if missing)
+  // Fetch profile (with fallback if RLS blocks or profile missing)
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('nickname, email, created_at')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError) {
     console.warn('[Export] Profile fetch failed, using fallback:', profileError.message);
@@ -74,13 +77,39 @@ export async function exportUserData(): Promise<ExportData> {
     }
   }
 
+  // Include pending (unsynced) journals from IndexedDB
+  let pendingJournals: Array<Record<string, unknown>> = [];
+  try {
+    const localPending = await getPendingJournals();
+    pendingJournals = localPending.map(j => ({
+      id: j.id,
+      content: j.content,
+      mood: j.mood,
+      mood_emoji: j.moodEmoji,
+      ai_response: j.aiResponse,
+      golden_quote: j.goldenQuote,
+      mood_label: j.moodLabel,
+      created_at: j.timestamp,
+      updated_at: j.timestamp,
+      status: j.status,
+    }));
+  } catch (err) {
+    console.warn('[Export] Failed to fetch pending journals from IndexedDB:', err);
+  }
+
+  // Merge and deduplicate by id (pending journals may not yet exist in Supabase)
+  const supabaseIds = new Set(allJournals.map(j => j.id as string));
+  const uniquePending = pendingJournals.filter(j => !supabaseIds.has(j.id as string));
+  const mergedJournals = [...allJournals, ...uniquePending];
+
   const exportData: ExportData = {
+    version: '1.0',
     profile: {
       nickname: profile?.nickname || user.email?.split('@')[0] || '用户',
       email: profile?.email || user.email || '',
       registeredAt: profile?.created_at || user.created_at || '',
     },
-    journals: allJournals.map((j) => ({
+    journals: mergedJournals.map((j) => ({
       id: j.id as string,
       content: (j.content as string) || '',
       mood: j.mood as number | null,
@@ -106,7 +135,19 @@ export async function exportUserData(): Promise<ExportData> {
   a.click();
   document.body.removeChild(a);
   // Revoke after a short delay to ensure download has started
-  setTimeout(() => URL.revokeObjectURL(url), 150);
+  void revokeAfterDelay(url, 150);
 
   return exportData;
+}
+
+/**
+ * Revoke an object URL after a delay, with proper cleanup to avoid timer leaks.
+ */
+function revokeAfterDelay(url: string, ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      resolve();
+    }, ms);
+  });
 }
