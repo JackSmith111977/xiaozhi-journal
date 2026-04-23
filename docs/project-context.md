@@ -29,6 +29,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 | **Animation** | motion | ^12.38.0 | Spring animations, page transitions, wave chart growth |
 | **State** | zustand | ^5.0.12 | Single store pattern in `src/store/journal.ts` |
 | **Error Monitoring** | @sentry/nextjs | ^10.49.0 | Error tracking, user context, performance monitoring |
+| **Deployment** | Vercel | - | Production/Preview/Development 三环境自动映射 |
 | **Data** | idb | ^8.0.3 | IndexedDB wrapper, async promise-based API |
 | **Utilities** | clsx | ^2.1.1 | Conditional class names |
 | | tailwind-merge | ^3.5.0 | Merge Tailwind classes |
@@ -210,6 +211,7 @@ xiaozhi-journal/
 | Motion v12 | `_bmad-output/standards/motion-v12-best-practices.md` | AnimatePresence, exitBeforeEnter |
 | Supabase | `_bmad-output/standards/supabase-best-practices.md` | SSR client separation, RLS policies |
 | Sentry | `_bmad-output/standards/sentry-nextjs-best-practices.md` | v10+ 配置, 用户上下文, Source Maps |
+| Vercel | `_bmad-output/standards/vercel-deployment-environments-best-practices.md` | 三环境分支映射, 环境变量隔离, Preview 部署 |
 | shadcn | `_bmad-output/standards/shadcn-best-practices.md` | `npx shadcn@latest add`, 组件覆盖规则 |
 | Base UI | `_bmad-output/standards/base-ui-react-best-practices.md` | Headless primitives, compound components |
 

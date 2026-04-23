@@ -16,3 +16,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Alerts**: v10 does not support FID metrics, use INP for performance alerts
 - **Reference**: `_bmad-output/standards/sentry-nextjs-best-practices.md`
 <!-- END:sentry-agent-rules -->
+
+<!-- BEGIN:vercel-agent-rules -->
+# Vercel Deployment Rules
+
+- **Environments**: Production (`main` branch), Preview (any other branch/PR), Development (`vercel dev`)
+- **System variable**: `VERCEL_ENV` = `"production"` | `"preview"` | `"development"`
+- **Branch mapping**: Settings → Environments → Production Branch (not necessarily `main`)
+- **Env vars**: Set per-environment via Dashboard or CLI (`vercel env add`). Same name can have different values per env.
+- **Branch override**: Branch-specific env vars override general Preview vars
+- **Redeploy required**: After adding/modifying env vars, must redeploy for changes to take effect
+- **Security**: Never commit `.env*` files. `SENTRY_AUTH_TOKEN` only in CI.
+- **Reference**: `_bmad-output/standards/vercel-deployment-environments-best-practices.md`
+<!-- END:vercel-agent-rules -->
