@@ -72,7 +72,7 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
   aiWaiting: false,
   latestAIResponse: null,
   isSyncing: false,
-  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  isOnline: true, // SSR stable; updated by initOfflineSync on client
   pendingMessage: null,
 
   fetchJournals: async () => {
@@ -200,12 +200,15 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
       aiWaiting: false,
       latestAIResponse: null,
       isSyncing: false,
-      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      isOnline: true,
       pendingMessage: null,
     });
   },
 
   initOfflineSync: () => {
+    // Set actual online status on client
+    set({ isOnline: navigator.onLine });
+
     const onOnline = () => {
       set({ isOnline: true, pendingMessage: null });
       syncPending();

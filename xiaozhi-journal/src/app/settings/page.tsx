@@ -25,7 +25,7 @@ export default function SettingsPage() {
 
 function SettingsContent() {
   const router = useRouter();
-  const { user } = useAppStore((s) => ({ user: s.user }));
+  const user = useAppStore((s) => s.user);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [nickname, setNickname] = useState('');
   const [savingNickname, setSavingNickname] = useState(false);

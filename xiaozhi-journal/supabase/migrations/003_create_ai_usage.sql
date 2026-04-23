@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS ai_usage (
   date date NOT NULL,
   platform_calls int NOT NULL DEFAULT 0,
   byok_calls int NOT NULL DEFAULT 0,
-  tier text DEFAULT 'free',
+  tier text DEFAULT 'free' CHECK (tier IN ('free', 'pro', 'enterprise')),
   UNIQUE(user_id, date)
 );
 

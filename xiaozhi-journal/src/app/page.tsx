@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/store';
 import { AuthGuard } from '@/components/auth-guard';
 import { MoodSelector } from '@/components/mood-selector';
@@ -27,13 +28,15 @@ export default function Home() {
 }
 
 function HomeContent() {
-  const { journals, loading, fetchJournals, aiWaiting, selectedMood } = useAppStore((s) => ({
-    journals: s.journals,
-    loading: s.loading,
-    fetchJournals: s.fetchJournals,
-    aiWaiting: s.aiWaiting,
-    selectedMood: s.selectedMood,
-  }));
+  const { journals, loading, fetchJournals, aiWaiting, selectedMood } = useAppStore(
+    useShallow((s) => ({
+      journals: s.journals,
+      loading: s.loading,
+      fetchJournals: s.fetchJournals,
+      aiWaiting: s.aiWaiting,
+      selectedMood: s.selectedMood,
+    }))
+  );
   const [initialized, setInitialized] = useState(false);
   const [capsuleJournal, setCapsuleJournal] = useState<Journal | null>(null);
   const [capsuleTitle, setCapsuleTitle] = useState<string>('');

@@ -1,4 +1,4 @@
-Status: review
+Status: done
 
 # Story 8.3: 密码重置
 

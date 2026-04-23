@@ -4,15 +4,18 @@ inputDocuments:
   - 'prd.md'
   - 'architecture.md'
   - 'ux-design-specification.md'
+  - 'sprint-change-proposal-2026-04-21.md'
 ---
 
 # Xiaozhi Journal - Epic Breakdown
 
 ## Overview
 
-This document provides the complete epic and story breakdown for Xiaozhi Journal, decomposing the requirements from the PRD, UX Design, and Architecture documents into implementable stories.
+This document provides the complete epic and story breakdown for Xiaozhi Journal, decomposing the requirements from the PRD, UX Design, Architecture, and Sprint Change Proposal documents into implementable stories.
 
-本文档针对商业级 Freemium 情感陪伴日记应用，涵盖 4 阶段开发计划（Phase 1-4），包含用户认证、云端数据同步、AI 双模式管道、付费订阅、多平台扩展等全新 Epic。
+本文档针对商业级 Freemium 情感陪伴日记应用，涵盖 4+ 阶段开发计划（Phase 1-4 + 基础设施扩展），包含用户认证、云端数据同步、AI 双模式管道、付费订阅、多平台扩展，以及 **基础设施建设**（支付、邮件、监控、测试、数据分析、UX 治理）。
+
+**最新更新（2026-04-21）：** 基于 Sprint Change Proposal 新增 Epic 14（支付基础设施）、Epic 15（开发体验治理）、Epic 16（UX 治理），扩展 Epic 12（成本与行为监控）和 Epic 13（部署与运维）。
 
 ## Requirements Inventory
 
@@ -66,10 +69,14 @@ This document provides the complete epic and story breakdown for Xiaozhi Journal
 - **FR31**: 用户可以将金句生成为可分享的卡片图片
 - **FR32**: 用户可通过微信分享金句卡片（小程序端原生分享，Web 端图片分享）
 
-**付费与订阅（FR33-FR35）：**
+**付费与订阅（FR33-FR39）：**
 - **FR33**: 用户可查看免费版与付费版的权益对比
 - **FR34**: 用户可通过微信支付或支付宝完成订阅
 - **FR35**: 用户可随时取消订阅，已付费权益持续到当前周期结束
+- **FR36**: 用户可通过支付宝或微信支付完成订阅（具体支付渠道）
+- **FR37**: 用户可在定价页查看 Free vs Pro 权益对比和价格
+- **FR38**: 用户超额使用时系统拦截并引导升级
+- **FR39**: 管理员可查看用户数/DAU/转化率/MRR 数据看板
 
 ### NonFunctional Requirements
 
@@ -108,6 +115,11 @@ This document provides the complete epic and story breakdown for Xiaozhi Journal
 - **NFR20**: 平台 AI 调用成本不超过总收入的 40%
 - **NFR21**: 系统提供 AI 调用成本看板（按日/周/月统计）
 
+**基础设施（NFR24-NFR26）：**
+- **NFR24**: 系统支持 SMTP 邮件发送，含中文模板，密码重置邮件可正常送达
+- **NFR25**: 事件追踪符合 PIPL（个人信息保护法）合规要求，含 consent 管理
+- **NFR26**: 代码提交前通过 lint + type-check + test 检查，main 分支保持可部署状态
+
 ### Additional Requirements
 
 **架构决策（来自 architecture.md）：**
@@ -129,6 +141,13 @@ This document provides the complete epic and story breakdown for Xiaozhi Journal
 - Vercel 托管 + Supabase 集成，开发/生产两环境
 - Phase 3 新增：Taro 跨平台（小程序 + App RN/H5 壳），统一 CacheProvider 接口
 - Phase 4 新增：CI/CD 自动部署（main → production），Sentry 错误监控
+- Phase 2 新增：SMTP 邮件服务（Resend/阿里云 DirectMail），中文邮件模板
+- Phase 2 新增：支付渠道集成（支付宝/微信支付），subscriptions 表扩展
+- Phase 2 新增：事件追踪 SDK（`lib/analytics.ts` → Supabase `events` 表）
+- Phase 2 新增：AI 成本写入 `ai_usage`（token 计量：input_tokens, output_tokens, estimated_cost）
+- Phase 2 新增：自动化测试框架（Vitest + testing-library）+ husky + GitHub Actions CI
+- Phase 3 新增：自定义域名 + ICP 备案评估 + 数据库备份策略
+- Phase 3 新增：设计 Token 治理 + Onboarding + 组件文档系统（Ladle）
 
 ### UX Design Requirements
 
@@ -163,6 +182,15 @@ This document provides the complete epic and story breakdown for Xiaozhi Journal
 - **UX-DR22**: 登录/注册页 — 邮箱输入 + 密码输入 + 密码重置链接 + 年龄确认（18+）
 - **UX-DR23**: 加载状态 — 骨架屏浅米色 `#F5EDE4` 闪烁（shadcn Skeleton）
 - **UX-DR24**: 危机词检测 UI — 温柔引导提示条 + 专业帮助资源链接
+
+**新增 UX 需求（基础设施治理）：**
+- **UX-DR25**: 设计 Token 治理 — 消除所有硬编码色值，统一使用 CSS 变量引用
+- **UX-DR26**: 空状态策略 — 所有空页面使用可配置 EmptyState 组件（title + description + action）
+- **UX-DR27**: Onboarding 引导 — 3 步冷启动引导（选表情 → 写日记 → 看回应），可跳过
+- **UX-DR28**: 统一反馈组件 — FeedbackMessage 组件（success/error/warning/info），骨架屏替换"加载中..."
+- **UX-DR29**: 组件文档系统 — Ladle 引入，核心组件 Story 编写
+- **UX-DR30**: 定价页 UI — Free vs Pro 对比卡片 + 价格展示 + CTA 按钮
+- **UX-DR31**: Admin 数据看板 UI — 核心指标展示（DAU/转化率/MRR），仅 admin 可见
 
 ### FR Coverage Map
 
@@ -200,9 +228,13 @@ This document provides the complete epic and story breakdown for Xiaozhi Journal
 | FR30 | Epic 9: 数据云端同步 | ✅ |
 | FR31 | Epic 7: 金句分享 | ✅ |
 | FR32 | Epic 7: 金句分享 | ✅ |
-| FR33 | Epic 10: BYOK 与付费订阅 | ✅ |
-| FR34 | Epic 10: BYOK 与付费订阅 | ✅ |
+| FR33 | Epic 10 + Epic 14: 支付基础设施 | ✅ |
+| FR34 | Epic 10 + Epic 14: 支付基础设施 | ✅ |
 | FR35 | Epic 10: BYOK 与付费订阅 | ✅ |
+| FR36 | Epic 14: 支付基础设施 | ✅ |
+| FR37 | Epic 14: 支付基础设施 | ✅ |
+| FR38 | Epic 14: 支付基础设施 | ✅ |
+| FR39 | Epic 14: 支付基础设施 | ✅ |
 
 ## Epic List
 
@@ -273,17 +305,31 @@ This document provides the complete epic and story breakdown for Xiaozhi Journal
 **优先级：** P1
 **新增 Epic**
 
-### Epic 12: 成本与行为监控（新增）
-**目标：** 用户行为追踪 + 留存分析 + AI 成本监控看板。确保 AI 成本可控、用户行为可追踪——商业可持续性。Phase 4 执行。
-**NFR 覆盖：** NFR21（成本看板）
-**优先级：** P1
-**新增 Epic**
+### Epic 12: 成本与行为监控（扩展）
+**目标：** 从 0 到 1 建立数据采集管道：事件追踪 SDK + AI 成本写入 + 限额拦截 + 聚合分析。确保 AI 成本可控、用户行为可追踪。Phase 2-4 执行。
+**NFR 覆盖：** NFR21（成本看板）, NFR25（PIPL 合规）
+**优先级：** P1 → P0（提前至 Phase 2-3）
+**扩展：** 新增 Story 12.3（限额拦截）、12.4（聚合视图）
 
-### Epic 13: 部署与运维（新增）
-**目标：** CI/CD 流水线 + 多环境部署 + 错误监控 + 日志系统。确保系统稳定可靠——用户无感知的基础设施。Phase 4 执行。
-**NFR 覆盖：** NFR11（SLA）, NFR14（可扩展）
-**优先级：** P1
-**新增 Epic**
+### Epic 13: 部署与运维（扩展）
+**目标：** SMTP 邮件服务 + 事务邮件系统 + 域名/SSL + CI/CD 流水线 + 错误监控 + 数据库备份 + 日志系统。确保系统稳定可靠、用户能收到关键通知。Phase 2-4 执行。
+**NFR 覆盖：** NFR11（SLA）, NFR14（可扩展）, NFR24（SMTP 邮件）
+**优先级：** P1 → P0（SMTP 部分提前至 Phase 2）
+**扩展：** 新增 Story 13.3（SMTP）、13.4（事务邮件）、13.5（域名/SSL）、13.6（备份）
+
+### Epic 14: 支付基础设施（新增）
+**目标：** 实现 free → pro 完整转化链路：支付渠道集成、定价页、付费墙、用量状态机、Admin 看板。让产品能收钱。Phase 2 优先。
+**FR 覆盖：** FR33, FR34, FR35, FR36, FR37, FR38, FR39
+**优先级：** P0（Phase 2）
+
+### Epic 15: 开发体验治理（新增）
+**目标：** 建立代码质量基线：测试框架、pre-commit hooks、代码规范、GitHub Actions CI。Phase 2 立即可做。
+**优先级：** P0（Phase 2）
+
+### Epic 16: UX 治理（新增）
+**目标：** 修复设计系统一致性：Token 治理、空状态升级、Onboarding、反馈组件统一、组件文档系统。Phase 3 执行。
+**UX 覆盖：** UX-DR1~5, UX-DR16, UX-DR19, UX-DR23
+**优先级：** P1（Phase 3）
 
 ---
 
@@ -1227,3 +1273,525 @@ So that 我能快速发现和修复问题。
 **Then** 错误信息上报到 Sentry
 **And** 包含堆栈、用户上下文、请求数据
 **And** 严重错误触发告警通知
+
+### Story 13.3: SMTP 邮件服务集成
+
+As a 用户,
+I want 收到中文格式的密码重置和验证邮件,
+So that 我能正常使用账号功能（阻塞 Story 8.3）。
+
+**Acceptance Criteria:**
+
+**Given** 现有 `supabase/config.toml`
+**When** 配置 SMTP
+**Then** 取消注释 `[auth.email.smtp]` 段
+**And** 填入邮件服务凭据（Resend 或阿里云 DirectMail）
+**And** 设置 `enabled = true`
+
+**Given** SMTP 配置完成
+**When** 在 `.env.local` 中添加环境变量
+**Then** 包含 `SUPABASE_SMTP_HOST`、`SUPABASE_SMTP_PORT`
+**And** 包含 `SUPABASE_SMTP_USER`、`SUPABASE_SMTP_PASS`
+**And** `SUPABASE_SMTP_ADMIN_EMAIL` 设为noreply域名
+**And** `.env.example` 包含上述变量占位符
+
+**Given** 邮件服务配置完毕
+**When** 用户请求密码重置
+**Then** 收到中文格式邮件（非 Supabase 默认英文模板）
+**And** 发件人显示 "小知 Journal"
+
+**Given** 本地开发环境
+**When** 触发密码重置
+**Then** 邮件发送到控制台日志（Supabase 本地开发行为）
+**And** 可复制重置链接到浏览器测试
+
+### Story 13.4: 事务邮件系统
+
+As a 运营者,
+I want 系统自动发送关键通知邮件,
+So that 用户不会错过账号和订阅相关的重要信息。
+
+**Acceptance Criteria:**
+
+**Given** 用户注册账号
+**When** 注册成功
+**Then** 发送欢迎邮件（中文，含首次使用引导）
+
+**Given** 用户订阅即将到期
+**When** 到期前 7 天
+**Then** 发送续费提醒邮件
+
+**Given** 用户订阅续费失败
+**When** 扣款异常
+**Then** 发送支付失败提醒邮件 + 重试引导
+
+**Given** 用户修改密码或新设备登录
+**When** 安全事件发生
+**Then** 发送安全通知邮件（含时间、设备信息）
+
+**Given** 用户数据导出完成
+**When** 导出文件就绪
+**Then** 发送下载通知邮件（如为异步导出）
+
+### Story 13.5: 域名与 SSL 配置
+
+As a 运营者,
+I want 绑定自定义域名并配置 SSL,
+So that 用户通过可信赖的域名访问产品。
+
+**Acceptance Criteria:**
+
+**Given** Vercel 项目已创建
+**When** 添加自定义域名
+**Then** 在 Vercel Dashboard 绑定域名
+**And** DNS 配置 CNAME 记录指向 `cname.vercel-dns.com`
+**And** Vercel 自动配置免费 SSL 证书
+
+**Given** 中国大陆用户访问
+**When** 评估域名可达性
+**Then** 确认 `*.vercel.app` 在国内的 DNS 解析状态
+**And** 如需备案域名，选择阿里云/腾讯云国内托管 + ICP 备案
+**And** 记录 ICP 备案号到页面底部
+
+### Story 13.6: 数据库备份策略
+
+As a 运营者,
+I want 定期备份数据库,
+So that 数据丢失时可以恢复。
+
+**Acceptance Criteria:**
+
+**Given** Supabase 项目
+**When** 检查备份配置
+**Then** 确认 Supabase 自带 daily backup 状态
+**And** 确认 backup retention policy（免费版 7 天，Pro 版 30 天）
+
+**Given** 需要灾难恢复
+**When** 执行恢复
+**Then** 可从 Supabase Dashboard 恢复最近一次 backup
+**And** 数据恢复后 RLS 策略仍然生效
+
+**Given** 用户数据导出
+**When** 导出 JSON 文件
+**Then** 验证 JSON 格式完整性
+**And** 字段使用 camelCase
+**And** 包含所有 6 张表的数据
+
+---
+
+## Epic 12 扩展：成本与行为监控（补充 Story）
+
+**目标（扩展）：** 从 0 到 1 建立整个数据采集管道，确保 AI 成本可控、用户行为可追踪。
+
+### Story 12.3: AI 每日限额拦截
+
+As a 运营者,
+I want 在免费用户超额使用时自动拦截 AI 调用,
+So that 平台 AI 成本不会失控。
+
+**Acceptance Criteria:**
+
+**Given** 免费用户提交日记
+**When** Route Handler 处理请求
+**Then** 查询 `ai_usage` 表当日 `platform_calls` 计数
+**And** 如果计数 ≥ 5（默认限额），返回 200 + `fromFallback: true`
+**And** 前端温柔提示："今天 AI 额度用完了，明天再来，或升级到无限版"
+
+**Given** 付费用户提交日记
+**When** Route Handler 处理请求
+**Then** 检查 `subscriptions` 表 `status = 'active'`
+**And** 跳过限额检查，正常调用 AI
+
+**Given** BYOK 用户提交日记
+**When** Route Handler 处理请求
+**Then** 跳过限额检查，使用用户 Key 直调
+
+**Given** 用户点击"升级"
+**When** 跳转到定价页
+**Then** 保留用户当前操作上下文（返回后继续）
+
+### Story 12.4: 聚合视图 + 基础分析
+
+As a 运营者,
+I want 查看聚合后的业务指标,
+So that 我能做出数据驱动的产品决策。
+
+**Acceptance Criteria:**
+
+**Given** Supabase pg_cron 已配置
+**When** 每日定时任务执行
+**Then** 聚合 DAU（活跃用户数）
+**And** 聚合 AI 调用量（platform_calls + byok_calls）
+**And** 聚合新用户注册数
+**And** 写入 `daily_metrics` 汇总表
+
+**Given** 运营者访问分析看板
+**When** 查询 `daily_metrics` 表
+**Then** 展示 DAU 趋势图
+**And** 展示 AI 成本趋势图
+**And** 展示注册→首次日记→订阅转化漏斗
+
+**Given** 需要 Cohort 分析
+**When** 按注册日期分组查询
+**Then** 展示不同 Cohort 的留存率
+**And** 可对比 BYOK 用户 vs 平台用户的活跃度
+
+---
+
+## Epic 14: 支付基础设施
+
+**目标：** 实现用户从 free 到 pro 的完整转化链路，让产品能收钱。Phase 2 优先执行。
+
+**FR 覆盖：** FR34（支付），FR33（权益对比），FR15-FR19（额度管理）
+**优先级：** P0（Phase 2）
+
+### Story 14.1: 支付渠道选型与集成
+
+As a 中国大陆用户,
+I want 通过支付宝或微信支付完成订阅,
+So that 我能用自己常用的支付方式购买服务。
+
+**Acceptance Criteria:**
+
+**Given** 需要支付渠道
+**When** 完成选型评估
+**Then** 评估选项：支付宝直连、微信支付直连、第三方聚合（Ping++/Stripe）
+**And** 选择方案需考虑：费率、接入复杂度、国内合规性
+**And** 记录选型决策到 `architecture.md`
+
+**Given** 支付渠道已选定
+**When** 集成支付 SDK
+**Then** 创建支付 Route Handler（`/api/payments/create`）
+**And** 创建支付回调 Route Handler（`/api/payments/callback`）
+**And** 创建 Webhook Handler（`/api/payments/webhook`）
+**And** `subscriptions` 表扩展：`payment_provider_id`、`last_payment_date`、`amount`
+
+**Given** 支付流程完成
+**When** Webhook 收到支付成功通知
+**Then** 更新 `subscriptions` 表：`tier='premium'`、`status='active'`
+**And** 发送订阅确认邮件
+**And** 记录事件到 `events` 表
+
+### Story 14.2: 定价页 /pricing
+
+As a 潜在付费用户,
+I want 查看免费版和付费版的权益对比和价格,
+So that 我能决定是否升级。
+
+**Acceptance Criteria:**
+
+**Given** 用户访问 `/pricing`
+**When** 页面渲染
+**Then** 显示两列对比卡片：免费版 vs 付费版
+**And** 免费版：每日 5 次 AI、基础波形图、基础历史
+**And** 付费版：无限 AI、周报/月报、高级时间胶囊、优先客服
+**And** 显示价格（月付/年付选项）
+**And** "立即升级"按钮（Primary，暖珊瑚色）
+
+**Given** 免费用户查看定价页
+**When** 点击"立即升级"
+**Then** 跳转到支付流程
+
+**Given** 付费用户查看定价页
+**When** 页面渲染
+**Then** 显示"已是高级会员"标识
+**And** 隐藏升级按钮
+
+### Story 14.3: 付费墙 + 用量状态机
+
+As a 额度用尽的免费用户,
+I want 在尝试使用超额功能时被温和引导升级,
+So that 我理解为什么要付费且知道如何操作。
+
+**Acceptance Criteria:**
+
+**Given** 免费用户 AI 额度用尽
+**When** 尝试提交日记获取 AI 回应
+**Then** 显示付费墙 UI（符合 UX-DR20）
+**And** 权益对比卡片 + 价格 + 升级按钮
+**And** 保留"配置 BYOK"作为替代选项
+
+**Given** 用户订阅激活
+**When** 支付成功
+**Then** 订阅状态变为 `active`
+**And** 用户获得无限 AI 权限
+
+**Given** 用户订阅到期未续费
+**When** `end_date` 到期
+**Then** 订阅状态变为 `expired`
+**And** 自动降级为免费版（每日 5 次）
+**And** 发送降级通知邮件
+
+**Given** 用户主动取消订阅
+**When** 点击"取消订阅"
+**Then** 状态变为 `cancelled`
+**And** 已付费权益持续到当前周期结束
+
+### Story 14.4: Admin 数据看板
+
+As a 运营者,
+I want 查看核心业务指标,
+So that 我能了解产品健康状况。
+
+**Acceptance Criteria:**
+
+**Given** Admin 角色用户访问 `/admin`
+**When** 页面渲染
+**Then** 显示：总用户数、DAU、7 日留存率
+**And** 显示：订阅转化率（免费→付费）
+**And** 显示：MRR（月度经常性收入）
+**And** 显示：AI 成本/收入比
+
+**Given** Admin 用户查看转化漏斗
+**When** 访问漏斗视图
+**Then** 展示：访客 → 注册 → 首次日记 → 第 3 次日记（Aha Moment）→ 订阅
+**And** 每步显示转化率
+
+**Given** 非 Admin 用户访问 `/admin`
+**When** 尝试访问
+**Then** 重定向到首页
+**And** 不显示任何管理数据
+
+---
+
+## Epic 15: 开发体验治理
+
+**目标：** 建立代码质量基线，防止技术债继续累积。Phase 2 立即可做。
+
+**优先级：** P0（Phase 2）
+
+### Story 15.1: 自动化测试框架
+
+As a 开发者,
+I want 建立自动化测试基础设施,
+So that 代码变更可以自动验证正确性。
+
+**Acceptance Criteria:**
+
+**Given** 现有项目
+**When** 安装测试框架
+**Then** 执行 `pnpm add -D vitest @testing-library/react @testing-library/jest-dom`
+**And** 创建 `vitest.config.ts`（Next.js 兼容配置）
+**And** `package.json` 新增 `"test": "vitest"` 和 `"test:run": "vitest run"`
+
+**Given** 测试框架安装完毕
+**When** 编写首个测试
+**Then** 创建 `src/__tests__/mood-selector.test.tsx`
+**And** 测试 MoodSelector 组件渲染
+**And** 测试点击表情后选中状态
+
+**Given** 测试编写完成
+**When** 执行 `pnpm test:run`
+**Then** 所有测试通过，无报错
+
+### Story 15.2: Pre-commit Hooks
+
+As a 开发者,
+I want 在提交前自动检查代码质量,
+So that 不会提交不符合规范的代码。
+
+**Acceptance Criteria:**
+
+**Given** 现有项目
+**When** 安装 husky + lint-staged
+**Then** 执行 `pnpm add -D husky lint-staged`
+**And** 执行 `npx husky init`
+
+**Given** husky 初始化完成
+**When** 配置 pre-commit hook
+**Then** `.husky/pre-commit` 包含 `npx lint-staged`
+**And** `package.json` 中 `lint-staged` 配置：
+**And** `*.{ts,tsx}` → `eslint --fix`
+**And** `*.{ts,tsx,css,md}` → `prettier --write`
+**And** `*.{ts,tsx}` → `tsc --noEmit`（或仅对修改的文件 type-check）
+
+**Given** Hook 配置完成
+**When** 提交代码
+**Then** 自动执行 lint + format + type-check
+**And** 任何一项失败时阻止提交
+
+### Story 15.3: 代码规范配置
+
+As a 开发者,
+I want 统一的代码格式化和提交规范,
+So that 代码库风格一致。
+
+**Acceptance Criteria:**
+
+**Given** 现有项目
+**When** 创建 Prettier 配置
+**Then** 创建 `.prettierrc`：`{ "semi": true, "singleQuote": true, "trailingComma": "es5" }`
+**And** 安装 `prettier-plugin-tailwindcss`
+**And** 创建 `.prettierignore`（忽略 `node_modules/`, `.next/`, `dist/`）
+
+**Given** Prettier 配置完成
+**When** 配置 commitlint
+**Then** 安装 `@commitlint/cli` + `@commitlint/config-conventional`
+**And** 创建 `commitlint.config.js`：extends `['@commitlint/config-conventional']`
+**And** husky pre-commit hook 中加入 commitlint 检查
+
+**Given** 代码规范配置完成
+**When** 对整个项目执行一次 format
+**Then** 执行 `pnpm prettier --write "src/**/*.{ts,tsx}"`
+**And** 无格式冲突报错
+
+### Story 15.4: GitHub Actions CI
+
+As a 团队,
+I want 代码推送后自动运行质量检查,
+So that main 分支始终保持可部署状态。
+
+**Acceptance Criteria:**
+
+**Given** 项目使用 GitHub
+**When** 创建 CI 工作流
+**Then** 创建 `.github/workflows/ci.yml`
+**And** 触发条件：`on: [push, pull_request]`
+
+**Given** CI 工作流触发
+**When** 执行 Job
+**Then** 步骤 1：`pnpm install`（缓存 node_modules）
+**And** 步骤 2：`pnpm lint`
+**And** 步骤 3：`pnpm type-check`
+**And** 步骤 4：`pnpm build`
+**And** 步骤 5：`pnpm test:run`
+
+**Given** CI 全部通过
+**When** PR 合入 main
+**Then** 触发 Vercel 自动部署
+
+**Given** CI 任一步骤失败
+**When** PR 状态更新
+**Then** GitHub 显示 CI 失败标识
+**And** 可选：配置 Branch Protection Rule 阻止合入失败 PR
+
+---
+
+## Epic 16: UX 治理
+
+**目标：** 修复设计系统一致性，补全用户体验基础设施。Phase 3 执行。
+
+**UX 覆盖：** UX-DR1~5（Token 系统），UX-DR16（反馈模式），UX-DR19（Onboarding），UX-DR23（骨架屏）
+**优先级：** P1（Phase 3）
+
+### Story 16.1: 设计 Token 治理
+
+As a 开发者,
+I want 所有颜色引用都使用设计 Token 而非硬编码色值,
+So that 主题切换和品牌调整只需要改一处。
+
+**Acceptance Criteria:**
+
+**Given** 现有代码库
+**When** 执行色值审计
+**Then** 扫描所有 `src/` 文件中的 `#[0-9A-Fa-f]{6}` 模式
+**And** 列出所有硬编码色值及其位置
+**And** 逐一替换为 CSS 变量引用（如 `var(--primary)` 或 Tailwind `bg-primary`）
+
+**Given** 审计完成
+**When** 检查残留硬编码
+**Then** `grep -rn '#[0-9A-Fa-f]\{6\}' src/` 仅返回设计 Token 定义处（`globals.css`）
+**And** 组件中无 `style={{ backgroundColor: '#...' }}` 内联样式
+
+**Given** Token 系统建立
+**When** 修改 `globals.css` 中的 `@theme` 变量
+**Then** 所有引用该 Token 的组件颜色同步更新
+
+### Story 16.2: 空状态组件升级
+
+As a 首次使用某个功能的用户,
+I want 看到友好的空状态引导而非空白,
+So that 我知道接下来该做什么。
+
+**Acceptance Criteria:**
+
+**Given** 现有 `empty-state.tsx`
+**When** 升级为可配置组件
+**Then** 接受 props：`title`、`description`、`action`（按钮）
+**And** `illustration`（SVG 图标或 emoji）
+**And** 遵循朋友语气文案策略
+
+**Given** 新 EmptyState 组件完成
+**When** 在历史列表页使用（无日记场景）
+**Then** 显示："还没有记录，写下第一篇吧 ✨" + 引导按钮
+**And** 在设置页使用（无 profile 场景）
+**Then** 显示："完善你的个人资料，让小知更了解你"
+**And** 在搜索无结果时使用
+**Then** 显示："没有找到匹配的结果，换个关键词试试？"
+
+### Story 16.3: Onboarding 引导流程
+
+As a 刚注册的新用户,
+I want 被引导完成首次体验,
+So that 我不会面对空白页面感到困惑。
+
+**Acceptance Criteria:**
+
+**Given** 用户完成注册后首次登录
+**When** 进入首页
+**Then** 显示冷启动引导页（3 步流程）
+**And** 步骤 1："选一个表情，代表今天的心情" + 高亮心情选择器
+**And** 步骤 2："随便写点什么，哪怕只有一句话" + 高亮输入框
+**And** 步骤 3："看看小知会怎么回应你" + 高亮 AI 回应区域
+
+**Given** 用户完成引导
+**When** 点击"开始体验"
+**Then** 引导层关闭
+**And** 记录 `appMeta.onboardingCompleted = true`
+**And** 后续登录不再显示引导
+
+**Given** 用户跳过引导
+**When** 点击"跳过"
+**Then** 直接进入正常使用状态
+**And** 后续可通过设置页重新查看
+
+### Story 16.4: 反馈组件统一
+
+As a 用户,
+I want 在操作成功或失败时看到一致的反馈,
+So that 我能理解系统状态。
+
+**Acceptance Criteria:**
+
+**Given** 现有分散的错误提示
+**When** 创建统一 FeedbackMessage 组件
+**Then** 支持类型：`success`（柔绿）、`error`（暖珊瑚）、`warning`（暖灰）、`info`（暖灰）
+**And** 支持自动消失（success/warning 3 秒后淡出）
+**And** 支持手动关闭（error 不自动消失）
+**And** 遵循 UX-DR16 反馈模式规范
+
+**Given** 新组件完成
+**When** 替换各页面分散错误状态
+**Then** 登录页、设置页、首页统一使用 FeedbackMessage
+**And** 所有错误文案走"温暖文案"规范
+
+**Given** 需要骨架屏
+**When** 创建 Skeleton 组件
+**Then** 使用浅米色 `#F5EDE4` 闪烁动画
+**And** 替换所有"加载中..."文字
+**And** 骨架结构与最终内容布局一致
+
+### Story 16.5: 组件文档系统
+
+As a 开发者,
+I want 可视化浏览所有组件及其用法,
+So that 我不需要翻代码就能知道有哪些可用组件。
+
+**Acceptance Criteria:**
+
+**Given** 现有项目
+**When** 引入 Ladle
+**Then** 执行 `pnpm add -D @ladle/react`
+**And** 创建 `ladle.config.ts`
+**And** `package.json` 新增 `"ladle": "ladle serve"`
+
+**Given** Ladle 安装完成
+**When** 为核心组件创建 Story
+**Then** 每个组件至少有一个基础 Story
+**And** 展示 props 文档
+**And** 包含 Design Token 展示页面
+
+**Given** 文档完成
+**When** 执行 `pnpm ladle`
+**Then** 可在浏览器中可视化浏览所有组件
+**And** 新开发者可以通过 Ladle 了解组件全貌

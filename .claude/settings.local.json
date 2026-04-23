@@ -74,7 +74,18 @@
       "Bash(git remote *)",
       "Bash(git rev-parse *)",
       "Bash(git symbolic-ref *)",
-      "Bash(git worktree *)"
+      "Bash(git worktree *)",
+      "Bash(npx --yes supabase --version)",
+      "mcp__playwright__browser_fill_form",
+      "Bash(npx supabase *)",
+      "mcp__playwright__browser_tabs",
+      "WebFetch(domain:motion.dev)",
+      "Read(//c/Users/Kei/Desktop//**)",
+      "Read(//c/Users/Kei//**)",
+      "WebFetch(domain:base-ui.com)",
+      "WebFetch(domain:docs.bmad-method.org)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm build *)"
     ]
   }
 }

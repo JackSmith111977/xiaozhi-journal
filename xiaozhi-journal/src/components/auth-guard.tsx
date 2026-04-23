@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import * as Sentry from '@sentry/nextjs';
 import { useAppStore, initializeAuth } from '@/store';
 
 interface AuthGuardProps {
@@ -12,15 +13,22 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, requireAuth = true }: AuthGuardProps) {
-  const { user, authLoading } = useAppStore((s) => ({
-    user: s.user,
-    authLoading: s.authLoading,
-  }));
+  const user = useAppStore((s) => s.user);
+  const authLoading = useAppStore((s) => s.authLoading);
   const router = useRouter();
 
   useEffect(() => {
     initializeAuth();
   }, [requireAuth]);
+
+  // Sentry user context sync
+  useEffect(() => {
+    if (user) {
+      Sentry.setUser({ id: user.id, email: user.email ?? undefined });
+    } else {
+      Sentry.setUser(null);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (authLoading) return;

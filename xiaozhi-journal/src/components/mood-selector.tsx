@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'motion/react';
+import { useShallow } from 'zustand/react/shallow';
 import { MOOD_MAP, type MoodLevel } from '@/types';
 import { useAppStore } from '@/store';
 
@@ -70,10 +71,12 @@ function MoodSvg({ mood, selected }: { mood: MoodLevel; selected: boolean }) {
 }
 
 export function MoodSelector() {
-  const { selectedMood, setSelectedMood } = useAppStore((s) => ({
-    selectedMood: s.selectedMood,
-    setSelectedMood: s.setSelectedMood,
-  }));
+  const { selectedMood, setSelectedMood } = useAppStore(
+    useShallow((s) => ({
+      selectedMood: s.selectedMood,
+      setSelectedMood: s.setSelectedMood,
+    }))
+  );
   const shouldReduceMotion = useReducedMotion();
 
   // Hover/tap: tween — instant response, no bounce

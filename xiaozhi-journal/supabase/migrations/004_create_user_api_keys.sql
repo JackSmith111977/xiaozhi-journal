@@ -6,13 +6,16 @@ CREATE TABLE IF NOT EXISTS user_api_keys (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   encrypted_key text NOT NULL,
-  provider text NOT NULL,
+  iv text NOT NULL,
+  provider text DEFAULT 'dashscope',
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE(user_id, provider)
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_api_keys_user_id ON user_api_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_api_keys_active ON user_api_keys(user_id, is_active);
 
 ALTER TABLE user_api_keys ENABLE ROW LEVEL SECURITY;
 

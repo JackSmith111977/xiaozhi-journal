@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/store';
 import type { Journal, MoodLevel } from '@/types';
 import { MOOD_MAP } from '@/types';
@@ -9,12 +10,14 @@ import { MOOD_MAP } from '@/types';
 const DRAFT_KEY = 'journal-draft';
 
 export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }) {
-  const { selectedMood, addJournal, setAIWaiting, updateAIResponse } = useAppStore((s) => ({
-    selectedMood: s.selectedMood,
-    addJournal: s.addJournal,
-    setAIWaiting: s.setAIWaiting,
-    updateAIResponse: s.updateAIResponse,
-  }));
+  const { selectedMood, addJournal, setAIWaiting, updateAIResponse } = useAppStore(
+    useShallow((s) => ({
+      selectedMood: s.selectedMood,
+      addJournal: s.addJournal,
+      setAIWaiting: s.setAIWaiting,
+      updateAIResponse: s.updateAIResponse,
+    }))
+  );
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);

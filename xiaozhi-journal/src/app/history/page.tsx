@@ -3,15 +3,18 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
+import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/store';
 import type { Journal } from '@/types';
 
 export default function HistoryPage() {
-  const { journals, loading, fetchJournals } = useAppStore((s) => ({
-    journals: s.journals,
-    loading: s.loading,
-    fetchJournals: s.fetchJournals,
-  }));
+  const { journals, loading, fetchJournals } = useAppStore(
+    useShallow((s) => ({
+      journals: s.journals,
+      loading: s.loading,
+      fetchJournals: s.fetchJournals,
+    }))
+  );
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {

@@ -18,6 +18,7 @@ export interface AIResponse {
   goldenQuote: string;
   moodLabel: string;
   fromFallback: boolean;
+  invalidKey?: boolean;
 }
 
 export interface AppMeta {

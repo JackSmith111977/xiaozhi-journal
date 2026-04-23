@@ -52,8 +52,8 @@ function parseAIResponse(text: string, fallbackText?: string): AIResponse | null
   }
 }
 
-export async function callAI(content: string, mood: MoodLevel): Promise<AIResponse> {
-  const apiKey = process.env.DASHSCOPE_API_KEY;
+export async function callAI(content: string, mood: MoodLevel, byokKey?: string): Promise<AIResponse> {
+  const apiKey = byokKey || process.env.DASHSCOPE_API_KEY;
   if (!apiKey) {
     return getFallbackResponse(mood);
   }
@@ -76,6 +76,10 @@ export async function callAI(content: string, mood: MoodLevel): Promise<AIRespon
     clearTimeout(timeout);
 
     if (!res.ok) {
+      // BYOK invalid key detection (401/403)
+      if (byokKey && (res.status === 401 || res.status === 403)) {
+        return { ...getFallbackResponse(mood), invalidKey: true };
+      }
       throw new Error(`API request failed: ${res.status}`);
     }
 

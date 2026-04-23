@@ -194,6 +194,27 @@ xiaozhi-journal/
 
 ---
 
+## Technical Standards Reference
+
+以下规范文档已固化，实现时**必须**遵循：
+
+| 规范 | 文件路径 | 关键要点 |
+|------|---------|---------|
+| TypeScript 5 | `_bmad-output/standards/typescript-5-best-practices.md` | `noUncheckedIndexedAccess`, `satisfies`, 类型守卫 |
+| Zustand v5 | `_bmad-output/standards/zustand-v5-best-practices.md` | 单 store + slice, selector, 禁止 cross-store import |
+| IndexedDB | `_bmad-output/standards/idb-indexeddb-best-practices.md` | DBSchema 泛型, batch transaction, `tx.done` |
+| Next.js 16 | `_bmad-output/standards/nextjs-16-best-practices.md` | App Router, SSR cookie, middleware auth |
+| React 19 | `_bmad-output/standards/react-19-best-practices.md` | Server Components default, `"use client"` 仅用于 hooks |
+| Tailwind v4 | `_bmad-output/standards/tailwindcss-v4-standards.md` | `@theme` directive, CSS custom properties |
+| Motion v12 | `_bmad-output/standards/motion-v12-best-practices.md` | AnimatePresence, exitBeforeEnter |
+| Supabase | `_bmad-output/standards/supabase-best-practices.md` | SSR client separation, RLS policies |
+| shadcn | `_bmad-output/standards/shadcn-best-practices.md` | `npx shadcn@latest add`, 组件覆盖规则 |
+| Base UI | `_bmad-output/standards/base-ui-react-best-practices.md` | Headless primitives, compound components |
+
+**加载顺序**：BMad agent 激活时自动搜索 `**/project-context.md`，读取此文件后应继续读取上述 standards 文件以获取完整规范。
+
+---
+
 ## Pending / Deferred Work
 
 - `resize` event listener on wave chart tooltip has no throttle/debounce — acceptable for tooltip performance
