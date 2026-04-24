@@ -227,19 +227,24 @@ otp_length = 6
 otp_expiry = 3600
 
 # Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# Local dev: points to Inbucket (no auth required). Production: override via env vars.
+[auth.email.smtp]
+enabled = true
+host = "env(SUPABASE_SMTP_HOST)"
+port = 1025
+user = "env(SUPABASE_SMTP_USER)"
+pass = "env(SUPABASE_SMTP_PASS)"
+admin_email = "env(SUPABASE_SMTP_ADMIN_EMAIL)"
+sender_name = "小知 Journal"
 
 # Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+[auth.email.template.recovery]
+subject = "重置你的小知 Journal 密码"
+content_path = "./supabase/templates/password-reset.html"
+
+[auth.email.template.signup]
+subject = "欢迎加入小知 Journal"
+content_path = "./supabase/templates/email-confirmation.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

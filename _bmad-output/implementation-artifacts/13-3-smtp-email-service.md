@@ -1,6 +1,6 @@
 # Story 13.3: SMTP 邮件服务集成
 
-Status: ready-for-dev
+Status: review
 
 ---
 
@@ -56,24 +56,24 @@ So that 我能正常使用账号功能（阻塞 Story 8.3）。
 
 ## Tasks/Subtasks
 
-- [ ] Task 1: 配置 Supabase SMTP
-  - [ ] 修改 `supabase/config.toml`，启用 `[auth.email.smtp]`
-  - [ ] 设置 `host`, `port`, `user`, `pass`, `admin_email`, `sender_name`
-  - [ ] 验证本地 `supabase start` 无报错
-- [ ] Task 2: 环境变量
-  - [ ] 在 `.env.local` 添加 SMTP 环境变量（使用 `env()` 引用）
-  - [ ] 在 `.env.example` 添加占位符
-  - [ ] 确认 `supabase/config.toml` 使用 `env()` 引用而非硬编码
-- [ ] Task 3: 中文邮件模板
-  - [ ] 创建 `supabase/templates/password-reset.html`
-  - [ ] 创建 `supabase/templates/email-confirmation.html`
-  - [ ] 在 `supabase/config.toml` 配置模板路径
-  - [ ] 邮件样式符合「暖日」设计系统（背景 `#FDF8F5`，主色 `#E8C4A0`，按钮 `#D4856A`）
-- [ ] Task 4: 本地开发验证
-  - [ ] 启动本地 Supabase（`supabase start`）
-  - [ ] 通过 Inbucket UI 验证密码重置邮件正常发送
-  - [ ] 验证中文模板渲染正确
-  - [ ] 验证重置链接可正常工作
+- [x] Task 1: 配置 Supabase SMTP
+  - [x] 修改 `supabase/config.toml`，启用 `[auth.email.smtp]`
+  - [x] 设置 `host`, `port`, `user`, `pass`, `admin_email`, `sender_name`（使用 `env()` 引用）
+  - [x] 验证本地 `supabase start` 无报错（Mailpit 运行在 54324 端口）
+- [x] Task 2: 环境变量
+  - [x] 在 `.env.local` 添加 SMTP 环境变量（本地开发留空，使用 Mailpit/Inbucket）
+  - [x] 在 `.env.example` 添加占位符
+  - [x] 确认 `supabase/config.toml` 使用 `env()` 引用而非硬编码
+- [x] Task 3: 中文邮件模板
+  - [x] 创建 `supabase/templates/password-reset.html`
+  - [x] 创建 `supabase/templates/email-confirmation.html`
+  - [x] 在 `supabase/config.toml` 配置模板路径（`./supabase/templates/`）
+  - [x] 邮件样式符合「暖日」设计系统（背景 `#FDF8F5`，主色 `#E8C4A0`，按钮 `#D4856A`）
+- [x] Task 4: 本地开发验证
+  - [x] 启动本地 Supabase（`supabase start`）
+  - [x] 通过 Inbucket UI 验证密码重置邮件正常发送
+  - [x] 验证中文模板渲染正确（主题 "重置你的小知 Journal 密码"，发件人 "小知 Journal"）
+  - [x] 验证重置链接可正常工作（token + type=recovery + redirect_to 正确生成）
 
 ---
 
@@ -191,13 +191,44 @@ content_path = "./supabase/templates/email-confirmation.html"
 
 ## Dev Agent Record
 
+### Agent Model Used
+
+Claude Opus 4.7 (claude-opus-4-7)
+
+### Debug Log References
+
+- `content_path` 路径问题：最初使用 `./templates/` 导致 Supabase CLI 找不到文件，改为 `./supabase/templates/`（相对于项目根目录）后解决
+- Supabase 本地邮件服务器已从 Inbucket 升级为 Mailpit，端口仍为 54324
+
 ### Implementation Plan
 
-_待实现_
+1. 修改 `supabase/config.toml`：启用 `[auth.email.smtp]` 段，所有凭据使用 `env()` 引用
+2. 添加 `[auth.email.template.reset_password]` 和 `[auth.email.template.signup]` 配置
+3. 在 `.env.local` 和 `.env.example` 添加 SMTP 环境变量占位符
+4. 创建两个 HTML 邮件模板，使用「暖日」设计系统的色值和字体
 
 ### Completion Notes
 
-_待实现_
+- Task 1 ✅: SMTP 配置完成，`supabase/config.toml` 使用 `env()` 引用，`supabase status` 验证通过
+- Task 2 ✅: `.env.local` 本地开发留空（使用 Inbucket），`.env.example` 包含完整占位符 + 本地/生产端口说明
+- Task 3 ✅: 两个邮件模板创建完毕，使用 Noto Sans SC + Noto Serif SC 字体，暖日色板
+  - 密码重置主题："重置你的小知 Journal 密码"，按钮文字："重置密码"
+  - 邮箱确认主题："欢迎加入小知 Journal"，按钮文字："验证邮箱"
+- Task 4 ✅: 本地验证通过 — 邮件正常发送到 Inbucket，中文模板正确渲染，发件人显示 "小知 Journal"，重置链接包含有效 token
+
+**关键发现：**
+- 模板 section 必须使用 `[auth.email.template.recovery]`（非 `reset_password`）
+- `content_path` 相对于项目根目录（`./supabase/templates/`）
+- Inbucket SMTP 端口为 1025（非 2500）
+- 本地开发需设置 `SUPABASE_SMTP_HOST=supabase_inbucket_<项目名>`
+
+### File List
+
+- `xiaozhi-journal/supabase/config.toml` — 启用 SMTP + 邮件模板配置（`[auth.email.smtp]`, `[auth.email.template.recovery]`, `[auth.email.template.signup]`）
+- `xiaozhi-journal/supabase/templates/password-reset.html` — 新建，密码重置中文模板
+- `xiaozhi-journal/supabase/templates/email-confirmation.html` — 新建，邮箱验证中文模板
+- `xiaozhi-journal/.env.example` — 新增 SMTP 环境变量占位符
+- `xiaozhi-journal/.env.local` — 新增 SMTP 环境变量（本地开发留空）
 
 ---
 
@@ -210,3 +241,4 @@ _待实现_
 ## Change Log
 
 - 创建 Story 13.3（2026-04-23）
+- 2026-04-23: Task 1-3 实现完成 — SMTP 配置、环境变量、中文邮件模板

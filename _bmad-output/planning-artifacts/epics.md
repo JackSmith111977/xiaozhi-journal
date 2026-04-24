@@ -1246,19 +1246,40 @@ So that 我能确保 AI 成本不超过收入的 40%（NFR20）。
 **NFR 覆盖：** NFR11（SLA）, NFR14（可扩展）
 **优先级：** P1
 
-### Story 13.1: CI/CD 流水线
+### Story 13.1: CI/CD 流水线 + Vercel 自动部署
 
 As a 开发者,
 I want 自动化部署流程,
-So that 代码提交后能自动构建和部署。
+So that 代码提交后能自动构建、部署、验证。
 
 **Acceptance Criteria:**
 
 **Given** 代码推送到 main 分支
 **When** Vercel 检测到变更
 **Then** 自动构建 Next.js 项目
-**And** 部署到生产环境
-**And** 构建失败时通知开发者
+**And** 部署到 Production 环境（自定义域名 + `*.vercel.app`）
+**And** 构建失败时通知开发者（GitHub 邮件 / Vercel 通知）
+
+**Given** 代码推送到非 main 分支（功能分支 / PR）
+**When** Vercel 检测到变更
+**Then** 自动创建 Preview 部署（唯一 URL `*-<hash>.vercel.app`）
+**And** GitHub PR 自动评论含 Preview URL
+**And** Preview 环境使用 Preview 环境变量
+
+**Given** 生产环境构建
+**When** `SENTRY_AUTH_TOKEN` 存在（CI 环境变量）
+**Then** 自动上传 Source Maps 到 Sentry
+**And** 不将 `SENTRY_AUTH_TOKEN` 提交到 `.env*` 文件
+
+**Given** 本地开发
+**When** 执行 `vercel dev` 或 `next dev`
+**Then** 使用 Development 环境变量
+**And** 可通过 `vercel env pull` 拉取 `.env.local`
+
+**Given** 环境变量修改
+**When** 在 Vercel Dashboard 修改环境变量
+**Then** 手动 Redeploy 使变更生效
+**And** Production/Preview/Development 三环境变量隔离
 
 ### Story 13.2: 错误监控集成
 
@@ -1376,6 +1397,74 @@ So that 数据丢失时可以恢复。
 **Then** 验证 JSON 格式完整性
 **And** 字段使用 camelCase
 **And** 包含所有 6 张表的数据
+
+### Story 13.7: Vercel 三环境配置
+
+As a 开发者,
+I want 配置 Production/Preview/Development 三环境隔离,
+So that 不同环境有独立的变量、分支策略、Sentry DSN。
+
+**Acceptance Criteria:**
+
+**Given** Vercel 项目已创建
+**When** 配置 Production Branch
+**Then** Settings → Environments → Production Branch 设为 `main`
+**And** `master` 分支自动归入 Preview 环境
+**And** `feature/*` 分支自动归入 Preview 环境
+
+**Given** 环境变量配置
+**When** 添加环境变量
+**Then** 按 Development/Preview/Production 三环境分别设置
+**And** 同一变量名可在不同环境设不同值（如 `NEXT_PUBLIC_SENTRY_DSN`）
+**And** 分支级变量覆盖通用 Preview 变量（更高优先级）
+
+**Given** 代码中使用 `process.env.VERCEL_ENV`
+**When** 部署到不同环境
+**Then** Production 部署：`VERCEL_ENV = "production"`
+**And** Preview 部署：`VERCEL_ENV = "preview"`
+**And** 本地开发：`VERCEL_ENV = "development"`
+
+**Given** Sentry 配置
+**When** 按环境区分采样率
+**Then** Production: `tracesSampleRate: 0.1`
+**And** Preview/Development: `tracesSampleRate: 1.0`
+**And** Development 环境 Sentry DSN 为空
+
+**Given** 安全要求
+**When** 配置环境变量
+**Then** `.env*` 文件不提交到 Git
+**And** `SENTRY_AUTH_TOKEN` 仅在 CI/Production 环境设置
+**And** 敏感变量（API Key、数据库 URL）不暴露在 Preview 环境
+
+### Story 13.8: Preview 部署验证流程
+
+As a 开发者,
+I want 每次 PR 自动有可访问的 Preview URL,
+So that 可以在合入 main 前验证功能正确性。
+
+**Acceptance Criteria:**
+
+**Given** 代码推送到非 main 分支
+**When** Vercel 检测到变更
+**Then** 自动创建 Preview 部署
+**And** 生成唯一 URL `project-<hash>.vercel.app`
+**And** GitHub PR 自动评论含 Preview URL
+
+**Given** Preview 部署已创建
+**When** 访问 Preview URL
+**Then** 使用 Preview 环境变量（如 Preview Sentry DSN）
+**And** 分支级环境变量覆盖通用 Preview 变量
+**And** 浏览器 Console 无构建/运行时错误
+
+**Given** PR 合入 main
+**When** 合并完成
+**Then** 自动触发 Production 部署
+**And** Preview URL 保持可访问（直到 Vercel 自动清理）
+
+**Given** 需要临时分享 Preview
+**When** 点击 Vercel Dashboard → Share Deployment
+**Then** 生成临时公开链接（无需 Vercel 账号）
+**And** 链接有效期可配置
 
 ---
 
