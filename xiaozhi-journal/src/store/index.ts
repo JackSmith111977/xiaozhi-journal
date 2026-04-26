@@ -26,7 +26,6 @@ export interface JournalSlice {
   latestAIResponse: AIResponse | null;
   isSyncing: boolean;
   isOnline: boolean;
-  pendingMessage: string | null;
   syncProgress: { total: number; done: number } | null;
   fetchJournals: () => Promise<void>;
   addJournal: (journal: Journal) => Promise<void>;
@@ -73,7 +72,6 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
   latestAIResponse: null,
   isSyncing: false,
   isOnline: true, // SSR stable; updated by initOfflineSync on client
-  pendingMessage: null,
   syncProgress: null,
 
   fetchJournals: async () => {
@@ -98,14 +96,12 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
       }));
 
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        set({ pendingMessage: '已保存，小知在路上~' });
         return;
       }
 
       set({ isSyncing: true });
       try {
         await syncToSupabase([offlineJournal]);
-        set({ pendingMessage: null });
       } catch {
         // Journal remains pending in IndexedDB for retry
       } finally {
@@ -202,7 +198,6 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
       latestAIResponse: null,
       isSyncing: false,
       isOnline: true,
-      pendingMessage: null,
       syncProgress: null,
     });
   },
@@ -212,7 +207,7 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
     set({ isOnline: navigator.onLine });
 
     const onOnline = () => {
-      set({ isOnline: true, pendingMessage: null });
+      set({ isOnline: true });
 
       // Import syncPendingWithAI dynamically
       import('@/lib/sync-manager').then(({ syncPendingWithAI }) => {
@@ -248,7 +243,7 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
     if (win.__journalOfflineHandler) window.removeEventListener('offline', win.__journalOfflineHandler);
     delete win.__journalOnlineHandler;
     delete win.__journalOfflineHandler;
-    set({ pendingMessage: null, syncProgress: null, aiWaiting: false });
+    set({ syncProgress: null, aiWaiting: false });
   },
 });
 

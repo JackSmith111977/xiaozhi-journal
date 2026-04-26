@@ -100,10 +100,10 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: 情绪波形图
-  epic-4: in-progress
+  epic-4: done
   4-1-svg-waveform-chart: done
-  4-2-hover-tooltip-no-data: backlog
-  epic-4-retrospective: optional
+  4-2-hover-tooltip-no-data: done
+  epic-4-retrospective: done
 
   # Epic 5: 日记历史与详情
   epic-5: backlog

@@ -63,7 +63,21 @@
 - **sender_name UTF-8 编码问题** — 现代客户端均支持 UTF-8 标题
 - **无 TLS/SSL SMTP 配置** — Supabase 内部处理
 
-## Deferred from: code review of 3-3-typewriter-quote-card.md (2026-04-26)
+## Deferred from: code review of 4-2-hover-tooltip-no-data.md (2026-04-26)
+
+- **date string invalid/malformed** — emotion-tooltip.tsx:85，数据源保证有效日期格式
+- **mood value outside 1-5 range** — emotion-tooltip.tsx:86，数据源保证 mood 在 1-5 范围
+- **timestamp no T separator** — emotion-chart.tsx:35，数据源保证 ISO format
+- **avgMood exceeds 1-5 range** — emotion-chart.tsx:62，avg of 1-5 values stay in range
+- **Math.round produces 0 or 6** — emotion-chart.tsx:63，same mathematical constraint
+- **resize no throttle** — emotion-tooltip.tsx:68-71，已在2026-04-15记录，tooltip场景性能开销可接受
+
+## RESOLVED in Epic 4 Retro (2026-04-26)
+
+- **pendingMessage 幽灵状态** — ✅ 已修复：移除 store.pendingMessage，journal-input 使用本地 showOfflineMsg
+- **Race condition: journal update mid-typewriter** — ✅ 已修复：添加 displayingJournal state 锁定动画期间的 journal
+- **前端 useByok 参数缺失** — ✅ 已确认：journal-input.tsx:121 已发送，API route 已接收
+- **incrementAIUsage 竞态** — 🟡 重分类为 Medium Impact：函数未实现，推迟至 Epic 10-2
 
 - **Race condition: journal update mid-typewriter** — Store realtime subscription can update journals mid-animation, causing abrupt disappearance. Requires broader store synchronization strategy beyond this story scope.
 - **AC4: theme tokens vs spec colors** — `bg-secondary`, `border-accent` rely on Tailwind theme matching spec values (#F5EDE4, 暖珊瑚). Pre-existing design decision.

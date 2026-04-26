@@ -43,6 +43,7 @@ function HomeContent() {
   const [capsuleTitle, setCapsuleTitle] = useState<string>('');
   const [showCapsule, setShowCapsule] = useState(false);
   const [showGoldenQuote, setShowGoldenQuote] = useState(false);
+  const [displayingJournal, setDisplayingJournal] = useState<Journal | null>(null);
   const seedingRef = useRef(false);
   const prevCountRef = useRef(0);
   const goldenQuoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -51,8 +52,12 @@ function HomeContent() {
   const latestJournal = journals[0];
   const hasAIResponse = latestJournal?.goldenQuote && !aiWaiting;
 
+  // Lock displaying journal during AI animation to prevent realtime race
+  const activeJournal = displayingJournal || latestJournal;
+
   // Stable onComplete callback for XiaozhiBubble
   const handleTypewriterComplete = useCallback(() => {
+    setDisplayingJournal(null); // Unlock after animation complete
     goldenQuoteTimerRef.current = setTimeout(() => setShowGoldenQuote(true), 300);
   }, []);
 
@@ -70,10 +75,14 @@ function HomeContent() {
   useEffect(() => {
     if (!hasAIResponse) {
       setShowGoldenQuote(false);
+      setDisplayingJournal(null); // Clear lock
       if (goldenQuoteTimerRef.current) {
         clearTimeout(goldenQuoteTimerRef.current);
         goldenQuoteTimerRef.current = null;
       }
+    } else if (!displayingJournal) {
+      // Lock journal when AI response first appears
+      setDisplayingJournal(latestJournal);
     }
   }, [hasAIResponse, latestJournal?.id]);
 
@@ -180,14 +189,14 @@ if (!initialized || loading) {
         )}
         {aiWaiting && <TypingIndicator />}
 
-        {hasAIResponse && (
+        {hasAIResponse && activeJournal && (
           <div className="mt-6">
             <XiaozhiBubble
-              text={latestJournal.aiResponse!}
+              text={activeJournal.aiResponse!}
               onComplete={handleTypewriterComplete}
             />
             {showGoldenQuote && (
-              <GoldenQuote quote={latestJournal.goldenQuote!} date={latestJournal.timestamp} journalId={latestJournal.id} journal={latestJournal} />
+              <GoldenQuote quote={activeJournal.goldenQuote!} date={activeJournal.timestamp} journalId={activeJournal.id} journal={activeJournal} />
             )}
           </div>
         )}
