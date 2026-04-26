@@ -11,12 +11,14 @@ import { MOOD_MAP } from '@/types';
 const DRAFT_KEY = 'journal-draft';
 
 export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }) {
-  const { selectedMood, addJournal, setAIWaiting, updateAIResponse } = useAppStore(
+  const { selectedMood, addJournal, setAIWaiting, updateAIResponse, isOnline, pendingMessage } = useAppStore(
     useShallow((s) => ({
       selectedMood: s.selectedMood,
       addJournal: s.addJournal,
       setAIWaiting: s.setAIWaiting,
       updateAIResponse: s.updateAIResponse,
+      isOnline: s.isOnline,
+      pendingMessage: s.pendingMessage,
     }))
   );
   const [content, setContent] = useState('');
@@ -197,6 +199,13 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
       if (offlineTimerRef.current) clearTimeout(offlineTimerRef.current);
     };
   }, [content]);
+
+  // 网络恢复时淡出离线提示（AC3）
+  useEffect(() => {
+    if (isOnline && showOfflineMsg) {
+      setShowOfflineMsg(false);
+    }
+  }, [isOnline, showOfflineMsg]);
 
   return (
     <motion.div

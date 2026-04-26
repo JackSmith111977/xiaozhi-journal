@@ -13,11 +13,11 @@ import { XiaozhiBubble } from '@/components/xiaozhi-bubble';
 import { GoldenQuote } from '@/components/golden-quote';
 import { EmptyState } from '@/components/empty-state';
 import { CapsulePopup } from '@/components/capsule-popup';
-import { getMeta, setMeta, getPendingJournals, addJournal as dbAdd, updateJournal as dbUpdate, getJournals } from '@/lib/db';
+import { getMeta, setMeta, addJournal as dbAdd } from '@/lib/db';
 import Link from 'next/link';
 import { checkTimeCapsule, recordShown } from '@/lib/time-capsule';
 import { SEED_JOURNALS } from '@/lib/seed-data';
-import type { Journal, AIResponse } from '@/types';
+import type { Journal } from '@/types';
 
 export default function Home() {
   return (
@@ -28,13 +28,14 @@ export default function Home() {
 }
 
 function HomeContent() {
-  const { journals, loading, fetchJournals, aiWaiting, selectedMood } = useAppStore(
+  const { journals, loading, fetchJournals, aiWaiting, selectedMood, syncProgress } = useAppStore(
     useShallow((s) => ({
       journals: s.journals,
       loading: s.loading,
       fetchJournals: s.fetchJournals,
       aiWaiting: s.aiWaiting,
       selectedMood: s.selectedMood,
+      syncProgress: s.syncProgress,
     }))
   );
   const [initialized, setInitialized] = useState(false);
@@ -136,63 +137,10 @@ function HomeContent() {
     init();
   }, [seedData, fetchJournals]);
 
-  // Process pending journals when online
-  useEffect(() => {
-    let cancelled = false;
+  // Process pending journals is handled by store's initOfflineSync → syncPendingWithAI
+// No duplicate processing needed here
 
-    const processPending = async () => {
-      const pending = await getPendingJournals();
-      for (const journal of pending) {
-        if (cancelled) return;
-        try {
-          const res = await fetch('/api/journal', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: journal.id,
-              content: journal.content,
-              mood: journal.mood,
-            }),
-          });
-
-          if (!res.ok) {
-            console.warn(`[AI Sync] Failed for journal ${journal.id}: ${res.status}`);
-            continue;
-          }
-
-          const data: AIResponse = await res.json();
-          if (data?.response && data?.goldenQuote) {
-            const updated = {
-              ...journal,
-              aiResponse: data.response,
-              goldenQuote: data.goldenQuote,
-              moodLabel: data.moodLabel,
-              status: 'ai_done' as const,
-            };
-            await dbUpdate(updated);
-          }
-        } catch (err) {
-          console.warn(`[AI Sync] Error for journal ${journal.id}:`, err);
-        }
-      }
-      // Refresh store after all pending journals are processed
-      if (!cancelled) {
-        await fetchJournals();
-      }
-    };
-
-    if (navigator.onLine) {
-      processPending();
-    }
-    const handleOnline = () => processPending();
-    window.addEventListener('online', handleOnline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      cancelled = true;
-    };
-  }, [fetchJournals]);
-
-  if (!initialized || loading) {
+if (!initialized || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-muted-foreground animate-pulse">加载中...</div>
@@ -225,6 +173,11 @@ function HomeContent() {
         </AnimatePresence>
 
         {/* AI Response Area */}
+        {syncProgress && (
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            正在处理 {syncProgress.done}/{syncProgress.total} 篇离线日记...
+          </div>
+        )}
         {aiWaiting && <TypingIndicator />}
 
         {hasAIResponse && (

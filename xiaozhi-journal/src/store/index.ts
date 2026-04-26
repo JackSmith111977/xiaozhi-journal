@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import type { StateCreator } from 'zustand';
-import { getJournals, getJournalById, addJournal as dbAdd, updateJournal as dbUpdate, syncToSupabase, getMeta, setMeta } from '@/lib/db';
+import { getJournals, getJournalById, addJournal as dbAdd, updateJournal as dbUpdate, syncToSupabase } from '@/lib/db';
 import { subscribeJournals, unsubscribeJournals } from '@/lib/realtime';
-import { syncPending } from '@/lib/sync-manager';
 import { supabase } from '@/lib/supabase/client';
 import type { Journal, AIResponse } from '@/types';
 import type { User, Subscription } from '@supabase/supabase-js';
@@ -28,6 +27,7 @@ export interface JournalSlice {
   isSyncing: boolean;
   isOnline: boolean;
   pendingMessage: string | null;
+  syncProgress: { total: number; done: number } | null;
   fetchJournals: () => Promise<void>;
   addJournal: (journal: Journal) => Promise<void>;
   updateJournal: (journal: Journal) => Promise<void>;
@@ -74,6 +74,7 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
   isSyncing: false,
   isOnline: true, // SSR stable; updated by initOfflineSync on client
   pendingMessage: null,
+  syncProgress: null,
 
   fetchJournals: async () => {
     set({ loading: true });
@@ -202,6 +203,7 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
       isSyncing: false,
       isOnline: true,
       pendingMessage: null,
+      syncProgress: null,
     });
   },
 
@@ -211,7 +213,24 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
 
     const onOnline = () => {
       set({ isOnline: true, pendingMessage: null });
-      syncPending();
+
+      // Import syncPendingWithAI dynamically
+      import('@/lib/sync-manager').then(({ syncPendingWithAI }) => {
+        set({ syncProgress: null });
+
+        syncPendingWithAI(
+          // onProgress
+          (total, done) => {
+            set({ syncProgress: { total, done }, aiWaiting: done < total });
+          },
+          // onComplete
+          () => {
+            set({ syncProgress: null, aiWaiting: false });
+          }
+        );
+      }).catch((err) => {
+        console.warn('[Store] Failed to load sync-manager:', err);
+      });
     };
     const onOffline = () => set({ isOnline: false });
 
@@ -229,7 +248,7 @@ const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, g
     if (win.__journalOfflineHandler) window.removeEventListener('offline', win.__journalOfflineHandler);
     delete win.__journalOnlineHandler;
     delete win.__journalOfflineHandler;
-    set({ pendingMessage: null });
+    set({ pendingMessage: null, syncProgress: null, aiWaiting: false });
   },
 });
 

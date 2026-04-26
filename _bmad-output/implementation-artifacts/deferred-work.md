@@ -11,7 +11,13 @@
 - **`new Date().toISOString()` 时钟偏差** — MVP 可接受，分布式场景后续优化
 - **环境变量延迟 panic** — 启动检查可选，当前运行时校验足够
 - **`invalidKey` 字段不一致** — 平台模式无此字段，前端可按场景处理
-- **Key enumeration timing** — MVP 阶段风险低，后续可加 constant-time compare
+## Deferred from: code review of 3-4-offline-async-callback.md (2026-04-26)
+
+- **pendingMessage 幽灵状态** — 定义但未被 UI 使用，与 journal-input 本地状态重复。状态设计不一致，需统一重构
+- **syncing 双重重置风险** — syncing=false 在多处设置，异常路径可能重复或遗漏。MVP 可接受
+- **timestamp 无效日期** — new Date(timestamp) 可能返回 Invalid Date，sort 结果异常。数据源保证 timestamp 有效
+- **网络中断无检查** — 循环中无 navigator.onLine 检查，断网时继续无效请求。依赖浏览器 fetch 自行处理
+- **useAppStore 非 React context** — getState() 在非 React context 调用，updateAIResponse 可能失败。Zustand 支持外部调用
 - BYOK 移除 — 按 spec 推迟至 Story 3.2
 - 频率限制 + 使用量追踪移除 — 按 spec 推迟至 Story 10.2
 - 数据库持久化移除 — 前端 IndexedDB 已覆盖，Story 10.2 恢复服务端持久化
