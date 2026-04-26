@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import type { Journal } from '@/types';
 import { ShareCard } from '@/components/share-card';
@@ -23,10 +23,19 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
   const [feedback, setFeedback] = useState<ShareFeedback>(null);
   const [loading, setLoading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showFeedback = useCallback((action: ShareAction, message: string) => {
     setFeedback({ action, message });
-    setTimeout(() => setFeedback(null), 2000);
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    feedbackTimerRef.current = setTimeout(() => setFeedback(null), 2000);
+  }, []);
+
+  // Cleanup feedback timer on unmount
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    };
   }, []);
 
   const handleShare = () => {

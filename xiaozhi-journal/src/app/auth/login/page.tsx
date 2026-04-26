@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signUp, signIn, resetPassword } from '@/lib/auth';
 import { AuthGuard } from '@/components/auth-guard';
@@ -24,8 +24,16 @@ function AuthPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const router = useRouter();
+
+  // Cleanup redirect timer on unmount
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
 
   const isPasswordValid = password.length >= 8;
   const canSubmit = mode === 'register'
@@ -62,7 +70,7 @@ function AuthPageContent() {
       if (mode === 'register') {
         await signUp(email, password);
         setSuccess('注册成功，欢迎加入！');
-        setTimeout(() => router.push('/'), 1000);
+        redirectTimerRef.current = setTimeout(() => router.push('/'), 1000);
       } else {
         await signIn(email, password);
         router.push('/');

@@ -92,12 +92,12 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: AI 温暖回应
-  epic-3: in-progress
+  epic-3: done
   3-1-ai-api-route-handler: done
   3-2-byok-settings: done
   3-3-typewriter-quote-card: done
   3-4-offline-async-callback: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   # Epic 4: 情绪波形图
   epic-4: backlog

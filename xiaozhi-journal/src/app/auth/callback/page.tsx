@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { updatePassword } from '@/lib/auth';
@@ -22,8 +22,16 @@ function CallbackContent() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [validToken, setValidToken] = useState<boolean | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const router = useRouter();
+
+  // Cleanup redirect timer on unmount
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
   const isPasswordValid = password.length >= 8;
   const passwordsMatch = password === confirmPassword && !!confirmPassword;
   const canSubmit = isPasswordValid && passwordsMatch;
@@ -61,7 +69,7 @@ function CallbackContent() {
     try {
       await updatePassword(password);
       setSuccess('密码已更新，请使用新密码登录');
-      setTimeout(() => router.push('/auth/login'), 1500);
+      redirectTimerRef.current = setTimeout(() => router.push('/auth/login'), 1500);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : '密码更新失败');
     } finally {

@@ -11,14 +11,13 @@ import { MOOD_MAP } from '@/types';
 const DRAFT_KEY = 'journal-draft';
 
 export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }) {
-  const { selectedMood, addJournal, setAIWaiting, updateAIResponse, isOnline, pendingMessage } = useAppStore(
+  const { selectedMood, addJournal, setAIWaiting, updateAIResponse, isOnline } = useAppStore(
     useShallow((s) => ({
       selectedMood: s.selectedMood,
       addJournal: s.addJournal,
       setAIWaiting: s.setAIWaiting,
       updateAIResponse: s.updateAIResponse,
       isOnline: s.isOnline,
-      pendingMessage: s.pendingMessage,
     }))
   );
   const [content, setContent] = useState('');
@@ -32,6 +31,9 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const offlineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const apiErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const invalidKeyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const restoredRef = useRef(false);
   const shouldReduceMotion = useReducedMotion();
   const savingRef = useRef(false);
@@ -123,7 +125,7 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
         if (!res.ok) {
           const errBody = await res.json().catch(() => ({}));
           setApiError(errBody.error || '请求失败，请稍后重试');
-          setTimeout(() => setApiError(null), 5000);
+          apiErrorTimerRef.current = setTimeout(() => setApiError(null), 5000);
           setAIWaiting(false);
           return;
         }
@@ -132,7 +134,7 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
         // BYOK Key 无效提示
         if (data.invalidKey) {
           setInvalidKeyMsg('你的 API Key 似乎不太对，检查一下？也可以先用平台 AI');
-          setTimeout(() => setInvalidKeyMsg(null), 8000);
+          invalidKeyTimerRef.current = setTimeout(() => setInvalidKeyMsg(null), 8000);
         }
         if (data?.response) {
           updateAIResponse(journal.id, data);
@@ -145,7 +147,7 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
     }
 
     // Delay onExitComplete so success message is visible briefly
-    setTimeout(() => {
+    exitTimerRef.current = setTimeout(() => {
       onExitComplete?.();
       savingRef.current = false;
     }, 600);
@@ -197,6 +199,9 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
       if (successTimerRef.current) clearTimeout(successTimerRef.current);
       if (offlineTimerRef.current) clearTimeout(offlineTimerRef.current);
+      if (apiErrorTimerRef.current) clearTimeout(apiErrorTimerRef.current);
+      if (invalidKeyTimerRef.current) clearTimeout(invalidKeyTimerRef.current);
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     };
   }, [content]);
 
