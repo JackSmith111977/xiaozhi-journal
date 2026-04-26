@@ -1,6 +1,6 @@
 # Story 13.1: CI/CD Pipeline
 
-Status: in-progress
+Status: done
 
 ---
 
@@ -181,8 +181,8 @@ Claude Opus 4.7 (claude-opus-4-7)
 - [x] [Review][Patch] `encryptKey`/`decryptKey` 标记 `async` 但全同步 — 移除 `async` [encryption.ts:13,32] — **已修复**
 - [x] [Review][Patch] journal 更新顺序问题 — `incrementAIUsage` 先于 `updateJournalStatus`，失败时云-端不一致 [route.ts:206-211] — **已修复: 交换顺序**
 - [x] [Review][Patch] upsert 写旧 tier 值 — 并发时新 tier 可能被旧值覆盖，应排除 tier 字段 [route.ts:26-38] — **已修复: 移除 tier**
-- [ ] [Review][Patch] bfcache `location.reload()` 闪烁 + 丢失草稿 — 需配合 draft save 机制 [bfcache-handler.tsx:12]
-- [ ] [Review][Patch] 429 响应被前端忽略 — 前端直接丢弃 429 响应体，用户无感知 [journal-input.tsx:96-99]
+- [x] [Review][Patch] bfcache `location.reload()` 闪烁 + 丢失草稿 — 改为 re-fetch + re-subscribe，不刷新页面 [bfcache-handler.tsx:12] — **已修复**
+- [x] [Review][Patch] 429 响应被前端忽略 — 前端直接丢弃 429 响应体，用户无感知 [journal-input.tsx:96-99] — **已修复**
 - [x] [Review][Patch] `userId` 不安全类型断言 — `user.id as string` 可能传播 undefined [route.ts:137] — **已修复**
 
 #### Deferred

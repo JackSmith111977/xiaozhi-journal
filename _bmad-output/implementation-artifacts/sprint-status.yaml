@@ -1,5 +1,5 @@
 # generated: 2026-04-22
-# last_updated: 2026-04-24
+# last_updated: 2026-04-26
 # project: Xiaozhi Journal
 # project_key: NOKEY
 # tracking_system: file-system
@@ -142,7 +142,7 @@ development_status:
 
   # Epic 13: 部署与运维（扩展）
   epic-13: in-progress
-  13-1-cicd-pipeline: in-progress
+  13-1-cicd-pipeline: done
   13-2-error-monitoring: review
   13-3-smtp-email-service: review
   13-4-transactional-email-system: review
