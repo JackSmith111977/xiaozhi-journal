@@ -144,7 +144,7 @@ development_status:
   epic-13: in-progress
   13-1-cicd-pipeline: done
   13-2-error-monitoring: done
-  13-3-smtp-email-service: review
+  13-3-smtp-email-service: done
   13-4-transactional-email-system: review
   13-5-domain-ssl-config: backlog
   13-6-database-backup-strategy: backlog

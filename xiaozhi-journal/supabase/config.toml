@@ -231,7 +231,7 @@ otp_expiry = 3600
 [auth.email.smtp]
 enabled = true
 host = "env(SUPABASE_SMTP_HOST)"
-port = 1025
+port = "env(SUPABASE_SMTP_PORT)"
 user = "env(SUPABASE_SMTP_USER)"
 pass = "env(SUPABASE_SMTP_PASS)"
 admin_email = "env(SUPABASE_SMTP_ADMIN_EMAIL)"

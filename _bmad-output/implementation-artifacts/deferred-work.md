@@ -27,3 +27,14 @@
 - **client beforeSend 手动附加 URL** — SDK 自动捕获 URL，手动设置多余但无害
 - **replaysOnErrorSampleRate: 1.0** — 预期设计，<1K 用户流量可接受
 - **AuthGuard useEffect 依赖项 [requireAuth]** — 预存问题，非本 story 引入
+
+## Deferred from: code review of 13-3-smtp-email-service.md (2026-04-26)
+
+- **模板 "1小时" 有效期硬编码** — 无机制注入配置值到静态模板，otp_expiry 很少改动
+- **模板 CSS 零复用** — Supabase 无 partial/include 机制，重复为平台限制
+- **确认邮件混淆验证与引导** — UX 设计意图，非 bug
+- **无纯文本回退** — 低优先级，现代客户端均支持 HTML
+- **无 DKIM/SPF/DMARC 配置文档** — 基础设施范畴，非本 story
+- **本地开发 SMTP_HOST 可能为空** — .env.local 配置问题，非代码 bug
+- **sender_name UTF-8 编码问题** — 现代客户端均支持 UTF-8 标题
+- **无 TLS/SSL SMTP 配置** — Supabase 内部处理

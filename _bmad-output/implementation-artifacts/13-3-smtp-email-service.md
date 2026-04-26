@@ -1,6 +1,6 @@
 # Story 13.3: SMTP 邮件服务集成
 
-Status: review
+Status: done
 
 ---
 
@@ -237,6 +237,29 @@ Claude Opus 4.7 (claude-opus-4-7)
 _待实现_
 
 ---
+
+## Review Findings
+
+**Date:** 2026-04-26
+
+### patch
+
+- [x] [Review][Patch] **SMTP port 硬编码** — `config.toml` `port = 1025` → `port = "env(SUPABASE_SMTP_PORT)"`，`SUPABASE_SMTP_PORT` 环境变量已存在但未被引用
+- [x] [Review][Patch] **Google Fonts `@import` 隐私/渲染** — 两模板删除 `@import url(https://fonts.googleapis.com/...)`，邮件客户端普遍不支持且存在隐私泄露
+- [x] [Review][Patch] **`.note` 冗余内联样式** — `email-confirmation.html` 的 `.note` div 同时使用 class + 重复内联样式，已移除内联
+- [x] [Review][Patch] **缺少 `lang="zh-CN"`** — 两模板 `<html>` 补 `lang="zh-CN"`
+- [x] [Review][Patch] **页脚对比度不足** — `#8A817C` → `#6B635E`，WCAG AA 4.5:1
+
+### defer
+
+- [x] [Review][Defer] **模板 "1小时" 有效期硬编码** — 无机制注入配置值到静态模板，`otp_expiry` 很少改动
+- [x] [Review][Defer] **模板 CSS 零复用** — Supabase 无 partial/include 机制，重复为平台限制
+- [x] [Review][Defer] **确认邮件混淆验证与引导** — UX 设计意图，非 bug
+- [x] [Review][Defer] **无纯文本回退** — 低优先级，现代客户端均支持 HTML
+- [x] [Review][Defer] **无 DKIM/SPF/DMARC 配置文档** — 基础设施范畴，非本 story
+- [x] [Review][Defer] **本地开发 SMTP_HOST 可能为空** — `.env.local` 配置问题，非代码 bug
+- [x] [Review][Defer] **sender_name UTF-8 编码问题** — 现代客户端均支持 UTF-8 标题
+- [x] [Review][Defer] **无 TLS/SSL SMTP 配置** — Supabase 内部处理
 
 ## Change Log
 
