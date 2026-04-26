@@ -11,3 +11,11 @@
 
 - **Edge Function Mock 实现 + 模板变量未替换** — Story Task 3 明确标记等待生产 SMTP 实现；实际 SMTP 发送和模板变量替换逻辑未实现，返回 mock success
 - **本地开发无 Inbucket 集成** — Story 设计为模拟发送，API route 在开发环境仅打印日志，未实际发送到 Inbucket
+
+## Deferred from: code review of 13-1-cicd-pipeline.md (2026-04-26)
+
+- **前端不发 useByok** — BYOK 前端功能属 Epic 10，后端代码为未来脚手架，当前无可达路径是预期行为
+- **SQL migration 不可重入** — `CREATE TABLE IF NOT EXISTS` 不改已有表，需新迁移文件。当前阶段不阻塞
+- **incrementAIUsage 竞态** — 注释已承认 read-then-write 非原子，MVP 阶段可接受
+- **加密格式无分隔符** — 密文+authTag 硬拼接。当前正常工作，格式迁移可在加密方案升级时处理
+- **architecture.md 缺 CI/CD 章节** — 可选完善，不影响功能

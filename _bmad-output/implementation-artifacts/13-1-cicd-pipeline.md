@@ -1,6 +1,6 @@
 # Story 13.1: CI/CD Pipeline
 
-Status: review
+Status: in-progress
 
 ---
 
@@ -28,7 +28,7 @@ So that 代码提交后能自动构建和部署到生产环境，无需手动操
 **Given** Vercel 项目配置
 **When** 配置 Branch Mapping
 **Then** `main` → Production Environment
-**And** `master` → Development/Preview Environment（或无自动部署）
+**And** `master` → 暂不自动部署（后续计划部署到 Preview）
 **And** PR branches → Preview Deployments
 
 ### AC3: 构建触发与通知
@@ -155,13 +155,43 @@ Claude Opus 4.7 (claude-opus-4-7)
 ### Completion Notes List
 
 - 2026-04-23: Story 13-1 完成
-  - AC1 ✅: Vercel 项目已连接 GitHub repo，Build Settings 正确（Next.js，npm run build）
+  - AC1 ✅: Vercel 项目已连接 GitHub repo，Build Settings 正确（Next.js，pnpm build）
   - AC2 ✅: Production Branch = main，PR 自动创建 Preview
   - AC3 ✅: Email 通知已配置
   - AC4 ✅: 部署成功，生产 URL: https://xiaozhi-journal.keidesu.top/
   - Task 4 评估：暂不需要 vercel.json
   - 环境变量已配置（Supabase + DashScope），ENCRYPTION_SECRET Epic 10 才需要
 
-### File List
+### Review Findings
 
-无文件变更（配置验证任务）
+#### Decision Needed → Resolved
+- [x] [Review][Decision] BYOK 无效 Key 计费策略 — 保持统计（含无效 key 尝试），不计费用。Epic 14 计费系统再区分。
+- [x] [Review][Decision] Sentry Replay 隐私 — `replaysSessionSampleRate=0`，保留 `replaysOnErrorSampleRate=1.0`。已修复。
+- [x] [Review][Decision] AC2 master 分支行为 — 确认为暂不自动部署，后续计划部署 Preview。AC 已更新。
+
+#### Patch
+- [x] [Review][Patch] Completion Notes 构建命令矛盾 — AC 要求 `pnpm build`，但 Completion Notes 记 `npm run build` [cicd-pipeline.md:158] — **已修复**
+- [x] [Review][Patch] NaN mood 校验绕过 — `typeof NaN === 'number'` 通过校验，需加 `Number.isNaN()` [route.ts:125] — **已修复**
+- [x] [Review][Patch] Sentry client `enableLogs` + `replaysSessionSampleRate` — 移除 `enableLogs`，设 `sampleRate=0` [sentry.client.config.ts] — **已修复**
+- [x] [Review][Patch] 服务端 Sentry 无 PII 脱敏 — `sentry.server.config.ts` 加 `beforeSend` [sentry.server.config.ts] — **已修复**
+- [x] [Review][Patch] `online` 事件监听未清理 — useEffect 提取命名 handler + `removeEventListener` [page.tsx:155] — **已修复**
+- [ ] [Review][Patch] DB 错误静默吞掉 — upsert/update 失败只 `console.error`，不返回错误，不计入 Sentry [route.ts:40-60]
+- [ ] [Review][Patch] `||` vs `??` 空字符串歧义 — `byokKey || DASHSCOPE_API_KEY`，`""` 静默回退 [ai.ts:56]
+- [ ] [Review][Patch] Sentry client 浏览器扩展噪音过滤 — `beforeSend` 可选补充 [sentry.client.config.ts]
+- [ ] [Review][Patch] bfcache `location.reload()` 闪烁 + 丢失草稿 — 需配合 draft save 机制 [bfcache-handler.tsx:12]
+- [ ] [Review][Patch] `encryptKey`/`decryptKey` 标记 `async` 但全同步 — 移除 `async` [encryption.ts:13,32]
+- [ ] [Review][Patch] journal 更新顺序问题 — `incrementAIUsage` 先于 `updateJournalStatus`，失败时云-端不一致 [route.ts:206-211]
+- [ ] [Review][Patch] 429 响应被前端忽略 — 前端直接丢弃 429 响应体，用户无感知 [journal-input.tsx:96-99]
+- [ ] [Review][Patch] `userId` 不安全类型断言 — `user.id as string` 可能传播 undefined [route.ts:137]
+- [ ] [Review][Patch] upsert 写旧 tier 值 — 并发时新 tier 可能被旧值覆盖，应排除 tier 字段 [route.ts:26-38]
+
+#### Deferred
+- [x] [Review][Defer] 前端从不发 useByok — BYOK 前端功能属 Epic 10，后端代码为未来脚手架，当前无可达路径是预期行为。
+- [x] [Review][Defer] SQL migration 不可重入 — `CREATE TABLE IF NOT EXISTS` 不改已有表，需新迁移文件。当前阶段不阻塞。
+- [x] [Review][Defer] `incrementAIUsage` 竞态 — 注释已承认 read-then-write 非原子，MVP 阶段可接受。
+- [x] [Review][Defer] 加密格式无分隔符 — 密文+authTag 硬拼接。当前正常工作，格式迁移可在加密方案升级时处理。
+- [x] [Review][Defer] architecture.md 缺 CI/CD 章节 — 可选完善，不影响功能。
+
+#### Dismissed
+- auth-guard 多 useEffect 竞态 — 运行正常，过度担忧。
+- project-context 技术规范超范围 — 无害，全局上下文更新。

@@ -152,8 +152,10 @@ function HomeContent() {
     if (navigator.onLine) {
       processPending();
     }
-    window.addEventListener('online', () => processPending());
+    const handleOnline = () => processPending();
+    window.addEventListener('online', handleOnline);
     return () => {
+      window.removeEventListener('online', handleOnline);
       cancelled = true;
     };
   }, [fetchJournals]);

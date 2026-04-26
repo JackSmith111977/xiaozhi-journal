@@ -4,4 +4,11 @@ Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   environment: process.env.NODE_ENV,
   tracesSampleRate: 0.1,
+  beforeSend(event) {
+    // PII 脱敏
+    if (event.user?.email) {
+      delete event.user.email;
+    }
+    return event;
+  },
 });

@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
       return NextResponse.json({ error: 'content is required' }, { status: 400 });
     }
-    if (!mood || typeof mood !== 'number' || mood < 1 || mood > 5) {
+    if (!mood || typeof mood !== 'number' || mood < 1 || mood > 5 || Number.isNaN(mood)) {
       return NextResponse.json({ error: 'mood must be a number 1-5' }, { status: 400 });
     }
 
