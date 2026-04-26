@@ -57,7 +57,10 @@
 - **sender_name UTF-8 编码问题** — 现代客户端均支持 UTF-8 标题
 - **无 TLS/SSL SMTP 配置** — Supabase 内部处理
 
-## Deferred from: code review of 13-4-transactional-email-system.md (2026-04-26)
+## Deferred from: code review of 3-3-typewriter-quote-card.md (2026-04-26)
+
+- **Race condition: journal update mid-typewriter** — Store realtime subscription can update journals mid-animation, causing abrupt disappearance. Requires broader store synchronization strategy beyond this story scope.
+- **AC4: theme tokens vs spec colors** — `bg-secondary`, `border-accent` rely on Tailwind theme matching spec values (#F5EDE4, 暖珊瑚). Pre-existing design decision.
 
 - **Edge Function Mock 实现 + 模板变量未替换** — Story Task 3 明确标记等待生产 SMTP 实现；stub 设计已知
 - **本地开发无 Inbucket 集成** — Story 设计为模拟发送，邮件仅记录日志

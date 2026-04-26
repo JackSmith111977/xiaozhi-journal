@@ -5,9 +5,10 @@ import { motion, useReducedMotion } from 'motion/react';
 
 interface XiaozhiBubbleProps {
   text: string;
+  onComplete?: () => void;
 }
 
-export function XiaozhiBubble({ text }: XiaozhiBubbleProps) {
+export function XiaozhiBubble({ text, onComplete }: XiaozhiBubbleProps) {
   const [displayed, setDisplayed] = useState('');
   const [done, setDone] = useState(false);
   const indexRef = useRef(0);
@@ -19,9 +20,18 @@ export function XiaozhiBubble({ text }: XiaozhiBubbleProps) {
     setDisplayed('');
     setDone(false);
 
+    // Reduced motion: show immediately and call onComplete
+    if (shouldReduceMotion) {
+      setDisplayed(text);
+      setDone(true);
+      onComplete?.();
+      return;
+    }
+
     const type = () => {
       if (indexRef.current >= text.length) {
         setDone(true);
+        onComplete?.();
         return;
       }
       indexRef.current += 1;
@@ -33,7 +43,7 @@ export function XiaozhiBubble({ text }: XiaozhiBubbleProps) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [text]);
+  }, [text, shouldReduceMotion, onComplete]);
 
   return (
     <motion.div

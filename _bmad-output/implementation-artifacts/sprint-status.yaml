@@ -95,7 +95,7 @@ development_status:
   epic-3: in-progress
   3-1-ai-api-route-handler: done
   3-2-byok-settings: done
-  3-3-typewriter-quote-card: backlog
+  3-3-typewriter-quote-card: done
   3-4-offline-async-callback: backlog
   epic-3-retrospective: optional
 

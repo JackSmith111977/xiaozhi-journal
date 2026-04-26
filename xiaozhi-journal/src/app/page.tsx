@@ -41,8 +41,40 @@ function HomeContent() {
   const [capsuleJournal, setCapsuleJournal] = useState<Journal | null>(null);
   const [capsuleTitle, setCapsuleTitle] = useState<string>('');
   const [showCapsule, setShowCapsule] = useState(false);
+  const [showGoldenQuote, setShowGoldenQuote] = useState(false);
   const seedingRef = useRef(false);
   const prevCountRef = useRef(0);
+  const goldenQuoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Compute latest journal and AI response status early for hooks
+  const latestJournal = journals[0];
+  const hasAIResponse = latestJournal?.goldenQuote && !aiWaiting;
+
+  // Stable onComplete callback for XiaozhiBubble
+  const handleTypewriterComplete = useCallback(() => {
+    goldenQuoteTimerRef.current = setTimeout(() => setShowGoldenQuote(true), 300);
+  }, []);
+
+  // Cleanup golden quote timer on unmount or journal change
+  useEffect(() => {
+    return () => {
+      if (goldenQuoteTimerRef.current) {
+        clearTimeout(goldenQuoteTimerRef.current);
+        goldenQuoteTimerRef.current = null;
+      }
+    };
+  }, [latestJournal?.id]);
+
+  // Reset showGoldenQuote when AI response not ready or journal changes
+  useEffect(() => {
+    if (!hasAIResponse) {
+      setShowGoldenQuote(false);
+      if (goldenQuoteTimerRef.current) {
+        clearTimeout(goldenQuoteTimerRef.current);
+        goldenQuoteTimerRef.current = null;
+      }
+    }
+  }, [hasAIResponse, latestJournal?.id]);
 
   // Time capsule: trigger after a new journal is added
   useEffect(() => {
@@ -168,9 +200,6 @@ function HomeContent() {
     );
   }
 
-  const latestJournal = journals[0];
-  const hasAIResponse = latestJournal?.goldenQuote && !aiWaiting;
-
   return (
     <main className="min-h-screen bg-background">
       <div className="max-w-[680px] mx-auto px-6 py-12">
@@ -200,8 +229,13 @@ function HomeContent() {
 
         {hasAIResponse && (
           <div className="mt-6">
-            <XiaozhiBubble text={latestJournal.aiResponse!} />
-            <GoldenQuote quote={latestJournal.goldenQuote!} date={latestJournal.timestamp} journalId={latestJournal.id} journal={latestJournal} />
+            <XiaozhiBubble
+              text={latestJournal.aiResponse!}
+              onComplete={handleTypewriterComplete}
+            />
+            {showGoldenQuote && (
+              <GoldenQuote quote={latestJournal.goldenQuote!} date={latestJournal.timestamp} journalId={latestJournal.id} journal={latestJournal} />
+            )}
           </div>
         )}
 
