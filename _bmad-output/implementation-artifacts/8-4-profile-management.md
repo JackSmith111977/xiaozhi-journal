@@ -86,7 +86,7 @@ So that 我能个性化自己的账号。
   2. 昵称修改保存成功
   3. 头像上传成功并显示
   4. 退出登录成功跳转登录页
-  5. `npm run dev` 启动无报错
+  5. `pnpm dev` 启动无报错
   6. TypeScript 编译通过（`tsc --noEmit` 无报错）
 
 ### File List (预期)

@@ -150,6 +150,7 @@ development_status:
   13-6-database-backup-strategy: backlog
   13-7-vercel-three-env-config: backlog
   13-8-preview-deployment-verification: backlog
+  13-9-pnpm-standardization: backlog
   epic-13-retrospective: optional
 
   # Epic 14: 支付基础设施

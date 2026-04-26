@@ -143,7 +143,7 @@ Supabase JS SDK 自动管理 session：
   4. 刷新页面后保持登录状态
   5. 未登录状态访问首页自动跳转登录页
   6. 已登录状态访问登录页自动跳转首页
-  7. `npm run dev` 启动无报错
+  7. `pnpm dev` 启动无报错
   8. TypeScript 编译通过（`tsc --noEmit` 无报错）
 
 ### File List (预期)

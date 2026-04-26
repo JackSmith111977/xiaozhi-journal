@@ -55,7 +55,7 @@ So that 数据先写本地再同步到 Supabase，实现离线优先。
 ### 架构约束
 
 - **项目起点**：保留现有 `xiaozhi-journal/` 项目，不重新初始化
-- **包管理器**：使用 `npm`，遵循 `package.json` 现有依赖管理方式
+- **包管理器**：使用 `pnpm`（已正式采纳为项目包管理器），遵循 `package.json` 中 `packageManager` 字段声明
 - **文件命名**：lib 文件使用 camelCase（`db.ts`），与现有 `supabase.ts`、`ai.ts` 一致
 - **导入别名**：`@/*` 映射到 `./src/*`，已在 `tsconfig.json` 中配置
 - **离线优先架构**：用户输入 → IndexedDB（本地缓存）→ 后台同步 Supabase → Zustand store 更新 → 组件重渲染
@@ -154,7 +154,7 @@ export async function syncToSupabase(journals: Journal[]) {
 
 - 本项目不写单元测试，手动验证
 - 验证点：
-  1. `npm run dev` 启动无报错
+  1. `pnpm dev` 启动无报错
   2. 添加日记后 IndexedDB 中有数据，status 为 `pending`
   3. `markSynced(id)` 调用后 status 变为 `ai_done`
   4. 未登录时 `syncToSupabase` 不报错
@@ -185,7 +185,7 @@ export async function syncToSupabase(journals: Journal[]) {
 ### Completion Notes List
 
 - `tsc --noEmit` 编译通过，无报错
-- `npm run dev` 启动正常（已有实例在 3000 端口运行）
+- `pnpm dev` 启动正常（已有实例在 3000 端口运行）
 - `lib/db.ts` 新增 3 个函数：`deleteJournal`, `markSynced`, `syncToSupabase`
 - `store/journal.ts` 新增 `isSyncing` state，`addJournal` 改为先写 IndexedDB 再异步触发 Supabase 同步
 - 同步逻辑在未登录/表不存在时静默失败，不阻塞用户操作

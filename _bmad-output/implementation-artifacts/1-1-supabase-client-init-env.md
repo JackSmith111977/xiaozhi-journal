@@ -11,7 +11,7 @@ So that 后续所有 Supabase 操作都有统一的基础设施。
 ## Acceptance Criteria
 
 1. **Given** 现有项目 `xiaozhi-journal/`
-   **When** 执行 `npm install @supabase/supabase-js`
+   **When** 执行 `pnpm add @supabase/supabase-js`
    **Then** 依赖安装成功，无报错
 
 2. **Given** 依赖已安装
@@ -34,7 +34,7 @@ So that 后续所有 Supabase 操作都有统一的基础设施。
 ## Tasks / Subtasks
 
 - [x] Task 1: 安装 Supabase 客户端依赖 (AC: #1)
-  - [x] 执行 `npm install @supabase/supabase-js`
+  - [x] 执行 `pnpm add @supabase/supabase-js`
 - [x] Task 2: 创建 Supabase 客户端模块 (AC: #2, #4)
   - [x] 创建 `src/lib/supabase.ts`
   - [x] 使用 `createClient()` 初始化，从环境变量读取配置
@@ -48,7 +48,7 @@ So that 后续所有 Supabase 操作都有统一的基础设施。
 ### 架构约束
 
 - **项目起点**：保留现有 `xiaozhi-journal/` 项目，不重新初始化。70%+ 前端组件可复用
-- **包管理器**：使用 `npm`（非 pnpm/yarn），遵循 `package.json` 现有依赖管理方式
+- **包管理器**：使用 `pnpm`（已正式采纳为项目包管理器），遵循 `package.json` 中 `packageManager` 字段声明
 - **文件命名**：lib 文件使用 camelCase（`supabase.ts`），与现有 `db.ts`、`ai.ts` 一致
 - **导入别名**：`@/*` 映射到 `./src/*`，已在 `tsconfig.json` 中配置
 
@@ -78,8 +78,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 - 本项目不写单元测试，手动验证
 - 验证点：
-  1. `npm install @supabase/supabase-js` 无报错
-  2. `npm run dev` 启动无报错
+  1. `pnpm add @supabase/supabase-js` 无报错
+  2. `pnpm dev` 启动无报错
   3. 在浏览器控制台或组件中 `import { supabase }` 可调用
 
 ### 后续 Story 依赖

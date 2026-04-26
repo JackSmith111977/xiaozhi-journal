@@ -130,7 +130,7 @@ So that 我能开始使用 Xiaozhi Journal 记录心情。
   3. 未勾选年龄确认时注册按钮 disabled
   4. 注册成功后跳转到首页
   5. 重复邮箱注册显示中文提示
-  6. `npm run dev` 启动无报错
+  6. `pnpm dev` 启动无报错
   7. TypeScript 编译通过（`tsc --noEmit` 无报错）
 
 ### File List (预期)

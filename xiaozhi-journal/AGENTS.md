@@ -17,6 +17,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Reference**: `_bmad-output/standards/sentry-nextjs-best-practices.md`
 <!-- END:sentry-agent-rules -->
 
+<!-- BEGIN:pnpm-agent-rules -->
+# pnpm 包管理规则
+
+- **包管理器**: 使用 pnpm，禁止 npm/yarn
+- **安装依赖**: `pnpm add <pkg>` / `pnpm add -D <pkg>`
+- **运行脚本**: `pnpm dev` / `pnpm build` / `pnpm lint`
+- **锁文件**: 仅提交 `pnpm-lock.yaml`，不提交 `package-lock.json`
+- **约束**: `package.json` 已有 `packageManager` 字段，Vercel 构建自动识别
+- **参考**: `_bmad-output/standards/pnpm-best-practices.md`
+<!-- END:pnpm-agent-rules -->
+
 <!-- BEGIN:vercel-agent-rules -->
 # Vercel Deployment Rules
 

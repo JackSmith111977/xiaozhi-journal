@@ -83,7 +83,7 @@ Supabase Auth 内置密码重置流程：
   4. 新密码 ≥ 8 字符验证
   5. 密码更新成功后跳转登录页
   6. 无效/过期链接显示友好提示
-  7. `npm run dev` 启动无报错
+  7. `pnpm dev` 启动无报错
   8. TypeScript 编译通过（`tsc --noEmit` 无报错）
 
 ### File List (预期)

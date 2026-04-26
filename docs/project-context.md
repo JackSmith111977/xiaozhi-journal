@@ -29,6 +29,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 | **Animation** | motion | ^12.38.0 | Spring animations, page transitions, wave chart growth |
 | **State** | zustand | ^5.0.12 | Single store pattern in `src/store/journal.ts` |
 | **Error Monitoring** | @sentry/nextjs | ^10.49.0 | Error tracking, user context, performance monitoring |
+| **Package Manager** | pnpm | 9.15.3 | `packageManager` 字段强制 pnpm，`packageManagerStrictVersion=false` 不阻塞版本偏差 |
 | **Deployment** | Vercel | - | Production/Preview/Development 三环境自动映射 |
 | **Data** | idb | ^8.0.3 | IndexedDB wrapper, async promise-based API |
 | **Utilities** | clsx | ^2.1.1 | Conditional class names |
@@ -193,6 +194,7 @@ xiaozhi-journal/
 8. **DO** use the existing `MOOD_MAP` for mood → emoji/label conversions
 9. **DO** handle AI parse failures with retry + fallback pattern (15s timeout → retry → fallback)
 10. **DO** check existing components before creating new ones — avoid duplication
+11. **DO** use `pnpm` for all package management — never `npm` or `yarn`. `package.json` has `packageManager` field enforcing pnpm.
 
 ---
 

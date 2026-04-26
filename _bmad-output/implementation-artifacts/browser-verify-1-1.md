@@ -27,7 +27,7 @@
 
 ## AC Verification Results
 
-### AC #1: 项目初始化 + npm run dev — PASS
+### AC #1: 项目初始化 + pnpm dev — PASS
 
 - **Route:** `/`
 - **Level:** LOAD
