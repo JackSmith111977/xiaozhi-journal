@@ -62,50 +62,59 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    // Get SMTP configuration from environment
-    const smtpHost = Deno.env.get('SUPABASE_SMTP_HOST') || 'smtpdm.aliyun.com'
-    const smtpPort = parseInt(Deno.env.get('SUPABASE_SMTP_PORT') || '465')
+    // Log email request
+    console.log('📧 Email request:')
+    console.log(`  To: ${to}`)
+    console.log(`  Subject: ${subject}`)
+    console.log(`  Template: ${template}`)
+
+    // Mock mode — default, controlled by EMAIL_MOCK env var
+    const isMock = Deno.env.get('EMAIL_MOCK') !== 'false'
+    if (isMock) {
+      console.warn('⚠️ EMAIL_MOCK=true — email not actually sent')
+      console.warn('   Set EMAIL_MOCK=false in production SMTP environment')
+      const response: EmailResponse = {
+        success: true,
+        message: 'Email send request processed (mock)',
+        messageId: `mock-${Date.now()}`,
+      }
+      return new Response(
+        JSON.stringify(response),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Production mode — validate and send real email
+    const smtpHost = Deno.env.get('SUPABASE_SMTP_HOST')
+    const rawPort = Deno.env.get('SUPABASE_SMTP_PORT') || '465'
+    const smtpPort = parseInt(rawPort, 10)
+    if (Number.isNaN(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
+      console.error(`Invalid SMTP port: ${rawPort}`)
+      return new Response(
+        JSON.stringify({ success: false, message: 'Invalid SMTP port configuration' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
     const smtpUser = Deno.env.get('SUPABASE_SMTP_USER')
     const smtpPass = Deno.env.get('SUPABASE_SMTP_PASS')
-    const senderName = '小知 Journal'
-
-    if (!smtpUser || !smtpPass) {
-      console.error('SMTP credentials not configured')
+    if (!smtpHost || !smtpUser || !smtpPass) {
+      console.error('SMTP configuration incomplete')
       return new Response(
         JSON.stringify({ success: false, message: 'SMTP service not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Log email send request (for development/testing)
-    console.log('📧 Sending email:')
-    console.log(`  To: ${to}`)
-    console.log(`  Subject: ${subject}`)
-    console.log(`  Template: ${template}`)
-    console.log(`  Template Path: ${templatePath}`)
-    console.log(`  Data:`, data)
-
-    // Note: Actual SMTP sending requires a SMTP client library
-    // For production, integrate with:
-    // - Deno SMTP client (https://deno.land/x/smtp)
-    // - Or call external email API (Resend, SendGrid, etc.)
-
-    // For now, return success (actual implementation deferred to production setup)
-    const response: EmailResponse = {
-      success: true,
-      message: 'Email send request processed',
-      messageId: `mock-${Date.now()}`,
-    }
-
+    // TODO: Implement real SMTP sending (deno.land/x/smtp or Resend/SendGrid API)
     return new Response(
-      JSON.stringify(response),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: false, message: 'SMTP sending not yet implemented' }),
+      { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
     console.error('Email send error:', error)
     return new Response(
-      JSON.stringify({ success: false, message: 'Internal server error', error: String(error) }),
+      JSON.stringify({ success: false, message: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

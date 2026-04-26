@@ -41,6 +41,20 @@ export async function resetPassword(email: string, redirectTo: string) {
 }
 
 /**
+ * 安全获取设备信息（浏览器环境）
+ * 服务端环境返回兜底值，不抛出异常
+ */
+function getDeviceInfo() {
+  if (typeof navigator === 'undefined') {
+    return { device: '未知设备', browser: '未知浏览器' }
+  }
+  return {
+    device: navigator.userAgent.split(' ').slice(-2).join(' ') || navigator.userAgent,
+    browser: navigator.userAgent.split('/')[0],
+  }
+}
+
+/**
  * 更新密码并发送安全通知邮件
  *
  * @param password - 新密码
@@ -54,6 +68,7 @@ export async function updatePassword(password: string) {
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (user?.email) {
+      const deviceInfo = getDeviceInfo()
       await sendSecurityNotification(
         user.email,
         'password_change',
@@ -65,9 +80,9 @@ export async function updatePassword(password: string) {
             hour: '2-digit',
             minute: '2-digit',
           }),
-          device: navigator.userAgent.split(' ').slice(-2).join(' ') || navigator.userAgent,
+          device: deviceInfo.device,
           ipAddress: '检测中...',
-          browser: navigator.userAgent.split('/')[0],
+          browser: deviceInfo.browser,
         }
       )
     }

@@ -38,3 +38,13 @@
 - **本地开发 SMTP_HOST 可能为空** — .env.local 配置问题，非代码 bug
 - **sender_name UTF-8 编码问题** — 现代客户端均支持 UTF-8 标题
 - **无 TLS/SSL SMTP 配置** — Supabase 内部处理
+
+## Deferred from: code review of 13-4-transactional-email-system.md (2026-04-26)
+
+- **Edge Function Mock 实现 + 模板变量未替换** — Story Task 3 明确标记等待生产 SMTP 实现；stub 设计已知
+- **本地开发无 Inbucket 集成** — Story 设计为模拟发送，邮件仅记录日志
+- **CSS 模板零复用** — Supabase 无 partial/include 机制，6 套模板 CSS 重复为平台限制
+- **无纯文本回退** — 低优先级，现代客户端均支持 HTML
+- **验证逻辑三层重复** — email regex + field validation 在 API Route 与 Edge Function 重复，安全行为期望冗余验证
+- **templatePath 冗余传递** — 当前三层传递但 Edge Function 仅用于日志，清理性改进非阻塞
+- **邮箱正则不过度收紧** — 当前 `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` 满足基本验证，收紧非 MVP 要求

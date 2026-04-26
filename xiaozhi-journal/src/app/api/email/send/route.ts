@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 /**
  * 邮件发送 API Route Handler
@@ -6,6 +7,10 @@ import { NextRequest, NextResponse } from 'next/server'
  * 处理事务邮件发送请求：
  * - 本地开发：记录邮件到日志（模拟发送）
  * - 生产环境：调用 Supabase Edge Function 发送真实邮件
+ *
+ * 认证要求：
+ * - 请求必须携带有效的 Supabase session cookie
+ * - 仅允许已登录用户调用（服务端调用场景后续需扩展认证方式）
  *
  * Request Body:
  * {
@@ -18,12 +23,25 @@ import { NextRequest, NextResponse } from 'next/server'
  */
 
 export async function POST(request: NextRequest) {
+  // 验证用户已登录（session cookie 自动携带）
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (!user || authError) {
+    return NextResponse.json(
+      { message: '未授权，请先登录' },
+      { status: 401 }
+    )
+  }
+
   try {
     const body = await request.json()
     const { to, subject, template, templatePath, data } = body
 
+    // 过滤邮件主题中的换行符，防止 SMTP 头注入
+    const sanitizedSubject = subject?.replace(/[\r\n]/g, '').trim()
+
     // 验证必填字段
-    if (!to || !subject || !template) {
+    if (!to || !sanitizedSubject || !template) {
       return NextResponse.json(
         { message: '缺少必填字段: to, subject, template' },
         { status: 400 }
@@ -43,7 +61,7 @@ export async function POST(request: NextRequest) {
     if (process.env.NODE_ENV === 'development') {
       console.log('📧 [邮件发送模拟]')
       console.log(`  收件人: ${to}`)
-      console.log(`  主题: ${subject}`)
+      console.log(`  主题: ${sanitizedSubject}`)
       console.log(`  模板: ${template}`)
       console.log(`  模板路径: ${templatePath}`)
       console.log(`  变量数据:`, data)
@@ -52,7 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         message: '邮件发送成功（本地开发模拟）',
         to,
-        subject,
+        subject: sanitizedSubject,
         template,
         simulated: true,
       })
@@ -82,7 +100,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         to,
-        subject,
+        subject: sanitizedSubject,
         template,
         templatePath,
         data,
@@ -107,7 +125,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('邮件发送 API 错误:', error)
     return NextResponse.json(
-      { message: '邮件发送失败', error: String(error) },
+      { message: '邮件发送失败，请稍后重试' },
       { status: 500 }
     )
   }

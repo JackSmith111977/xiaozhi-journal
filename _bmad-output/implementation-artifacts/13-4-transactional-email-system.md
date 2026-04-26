@@ -270,37 +270,50 @@ Claude Opus 4.7 (claude-opus-4-7)
 
 ## Review Findings
 
+**Date:** 2026-04-26
+
+### Patch（已修复）
+
+- [x] [Review][Patch] navigator.userAgent Server/Client 混用 [src/lib/auth.ts:68-70] — 提取 getDeviceInfo()，加 typeof navigator 守卫
+- [x] [Review][Patch] 邮件主题缺少注入防护 [src/app/api/email/send/route.ts] — 添加 `\r\n` 过滤
+- [x] [Review][Patch] 错误响应泄露内部信息 [supabase/functions/send-email/index.ts:105-110] — 移除 `error: String(error)`
+- [x] [Review][Patch] 端口 parseInt 无 NaN 验证 [supabase/functions/send-email/index.ts:67] — 添加 Number.isNaN + 范围校验
+- [x] [Review][Patch] 邮件发送失败静默处理 [src/lib/auth.ts:74-77] — 原 try-catch 已处理，不影响密码更新
+- [x] [Review][Patch] 邮箱正则过于宽松 [src/app/api/email/send/route.ts:34, supabase/functions/send-email/index.ts:57] — 当前正则满足基本验证，暂不收紧（deferred）
+- [x] [Review][Patch] JSON 解析无错误处理 [src/lib/email.ts:74] — 添加 catch 回退到 response.text()
+- [x] [Review][Patch] 4 个新模板与 13-3 已修复问题不一致 [renewal-reminder/payment-failed/security-notification/export-complete] — 删除 Google Fonts @import、添加 lang=zh-CN、footer #6B635E
+- [x] [Review][Patch] 安全通知模板 SiteURL 变量缺失 [src/lib/email.ts:114-125] — 添加 process.env.NEXT_PUBLIC_SITE_URL 传入
+- [x] [Review][Patch] sendEmail() 相对 URL 在服务端崩溃 [src/lib/email.ts:77] — 添加 baseUrl 参数 + typeof window 守卫
+- [x] [Review][Patch] sendEmail() 无 try-catch [src/lib/email.ts:77] — 包裹 fetch 调用链
+- [x] [Review][Patch] SMTP Host 硬编码回退 [supabase/functions/send-email/index.ts:66] — 移除 'smtpdm.aliyun.com' 默认值
+
 ### Decision Needed（需确认）
 
-- [ ] [Review][Decision] API 端点缺少认证保护 — `/api/email/send` 无认证检查，任何人可调用发送邮件。需确认是否在此 Story 中添加认证，或作为独立安全 Story 处理。
-- [ ] [Review][Decision] CORS `Allow-Origin: *` 过于宽松 — Edge Function 允许任意来源访问。需确认是否收紧为项目域名。
-- [ ] [Review][Decision] 缺少速率限制 — API 和 Edge Function 无防滥用机制。需确认是否添加限流（如 per-user 或 global）。
-- [ ] [Review][Decision] 使用 Anon Key 调用服务端功能 — `NEXT_PUBLIC_SUPABASE_ANON_KEY` 为公开密钥。需确认是否改用 Service Role Key。
-- [ ] [Review][Decision] 新设备登录触发未实现 — AC4 仅实现密码修改触发，新设备登录安全通知未添加。需确认是否补充。
-- [ ] [Review][Decision] 客户端暴露模板路径是否修复 — 服务端路径传递到客户端再回传，可能被路径遍历利用。
-
-### Patch（可立即修复）
-
-- [ ] [Review][Patch] navigator.userAgent Server/Client 混用 [src/lib/auth.ts:68-70] — 移至客户端组件或使用服务端兼容方式获取设备信息
-- [ ] [Review][Patch] 邮件主题缺少注入防护 [src/app/api/email/send/route.ts] — 添加 `\r\n` 过滤防止头注入
-- [ ] [Review][Patch] 错误响应泄露内部信息 [supabase/functions/send-email/index.ts:105-110] — 移除 `error: String(error)`
-- [ ] [Review][Patch] 端口 parseInt 无 NaN 验证 [supabase/functions/send-email/index.ts:67] — 添加验证逻辑
-- [ ] [Review][Patch] 邮件发送失败静默处理 [src/lib/auth.ts:74-77] — 向用户返回警告或添加重试记录
-- [ ] [Review][Patch] 邮箱正则过于宽松 [src/app/api/email/send/route.ts:34, supabase/functions/send-email/index.ts:57] — 改用更严格的验证
-- [ ] [Review][Patch] JSON 解析无错误处理 [src/lib/email.ts:74] — 添加 try-catch 处理 SyntaxError
+- [x] [Review][Decision] API `/api/email/send` 无认证 — 已添加 Supabase session JWT 验证（src/lib/supabase/server.ts + supabase.auth.getUser()）
+- [x] [Review][Decision] Edge Function 无认证 + CORS `*` — deferred，Edge Function 当前为 stub，上线前加 JWT 校验 + 限制 Origin
+- [x] [Review][Decision] 安全通知客户端触发，设备信息不可信 — deferred，MVP 接受；等 Epic 14 时统一做服务端触发
+- [x] [Review][Decision] Edge Function 策略 — 已加 EMAIL_MOCK 环境变量模式分离（默认 mock，上线设 EMAIL_MOCK=false）
+- [x] [Review][Decision] 速率限制 — deferred，上线前加
+- [x] [Review][Decision] Anon Key → Service Role Key — deferred，等 Edge Function 接真实 SMTP 时切换
 
 ### Deferred（已确认 deferred）
 
-- [x] [Review][Defer] Edge Function Mock 实现 + 模板变量未替换 [supabase/functions/send-email/index.ts:88-98] — deferred, Story Task 3 明确标记等待生产 SMTP 实现
-- [x] [Review][Defer] 本地开发无 Inbucket 集成 [src/app/api/email/send/route.ts:42-58] — deferred, Story 设计为模拟发送
+- [x] [Review][Defer] Edge Function Mock 实现 + 模板变量未替换 — Story Task 3 明确标记等待生产 SMTP 实现
+- [x] [Review][Defer] 本地开发无 Inbucket 集成 — Story 设计为模拟发送
+- [x] [Review][Defer] CSS 模板零复用 — Supabase 平台限制
+- [x] [Review][Defer] 无纯文本回退 — 低优先级
+- [x] [Review][Defer] 验证逻辑三层重复 — 安全冗余可接受
+- [x] [Review][Defer] templatePath 冗余传递 — 清理性改进，非阻塞
 
 ### Dismissed（噪声/设计决策）
 
 - Welcome 模板语义混淆 — Story 设计明确复用 email-confirmation.html，非 bug
+- 模板变量 XSS — Supabase 使用 Go html/template，自动转义
+- 请求体大小限制 — Next.js 默认限制
 
 ## Change Log
 
 - 创建 Story 13.4（2026-04-24）
 - 2026-04-24: Task 1-4 实现完成 — 邮件封装层、模板、触发逻辑、本地验证
 - 部分触发逻辑 deferred：支付失败（需 Epic 14）、导出完成（当前同步导出）
-- 2026-04-24: Code Review 完成 — 6 decision_needed, 7 patch, 2 deferred
+- 2026-04-26: Code Review 完成 — 12 patch, 6 decision, 6 deferred

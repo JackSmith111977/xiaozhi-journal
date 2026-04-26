@@ -64,7 +64,7 @@ const EMAIL_TEMPLATES: Record<EmailTemplateType, {
  * @returns Promise<void>
  * @throws Error - 发送失败时抛出错误
  */
-export async function sendEmail(options: SendEmailOptions): Promise<void> {
+export async function sendEmail(options: SendEmailOptions, baseUrl?: string): Promise<void> {
   const { to, template, data } = options
 
   // 获取模板配置
@@ -73,24 +73,40 @@ export async function sendEmail(options: SendEmailOptions): Promise<void> {
     throw new Error(`未知的邮件模板类型: ${template}`)
   }
 
-  // 调用 Edge Function 发送邮件
-  const response = await fetch('/api/email/send', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      to,
-      subject: templateConfig.subject,
-      template,
-      templatePath: templateConfig.templatePath,
-      data,
-    }),
-  })
+  // 确定 API 端点 URL（服务端调用需传入 baseUrl）
+  const origin = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+  if (!origin) {
+    throw new Error('sendEmail: 无法确定 API 基础 URL，在服务端调用请传入 baseUrl')
+  }
+
+  let response: Response
+  try {
+    response = await fetch(`${origin}/api/email/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to,
+        subject: templateConfig.subject,
+        template,
+        templatePath: templateConfig.templatePath,
+        data,
+      }),
+    })
+  } catch {
+    throw new Error('邮件发送失败: 网络错误')
+  }
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.message || '邮件发送失败')
+    let errorMessage = '邮件发送失败'
+    try {
+      const error = await response.json()
+      errorMessage = error.message || errorMessage
+    } catch {
+      errorMessage = await response.text().catch(() => errorMessage)
+    }
+    throw new Error(errorMessage)
   }
 }
 
@@ -120,6 +136,7 @@ export async function sendSecurityNotification(
       Device: deviceInfo.device || '未知设备',
       IPAddress: deviceInfo.ipAddress || '未知IP',
       Browser: deviceInfo.browser || '未知浏览器',
+      SiteURL: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     },
   })
 }
