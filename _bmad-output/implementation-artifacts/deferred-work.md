@@ -1,5 +1,12 @@
 # Deferred Work
 
+## Deferred from: code review of 3-1-ai-api-route-handler (2026-04-26)
+- BYOK 移除 — 按 spec 推迟至 Story 3.2
+- 频率限制 + 使用量追踪移除 — 按 spec 推迟至 Story 10.2
+- 数据库持久化移除 — 前端 IndexedDB 已覆盖，Story 10.2 恢复服务端持久化
+- remainingCalls 响应字段移除 — 捆绑限次逻辑，Story 10.2 恢复
+- AI Usage 端点硬编码 — Story 10.2 实现真实查询
+
 ## Deferred from: code review of 4-2-hover-tooltip-no-data.md (2026-04-15)
 
 - **resize 事件无节流/防抖** — `window.addEventListener('resize', computePos)` 在窗口调整大小时每帧触发 getBoundingClientRect + setState；tooltip 场景性能开销可接受
