@@ -136,6 +136,7 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
+    Sentry.setUser({ id: user.id, email: user.email ?? undefined });
     const userId = user.id;
 
     // Check today's AI usage

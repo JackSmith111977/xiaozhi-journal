@@ -1,6 +1,6 @@
 # Story 13.2: 错误监控集成
 
-Status: review
+Status: done
 
 ---
 
@@ -247,3 +247,29 @@ TypeScript error: AIResponse missing `invalidKey` — fixed by extending interfa
 - `.env.local`（修改：NEXT_PUBLIC_SENTRY_DSN）
 - `.env.example`（修改：Sentry 配置说明）
 - `package.json`（新增：@sentry/nextjs）
+
+---
+
+## Review Findings
+
+**Date:** 2026-04-26
+**Reviewers:** Blind Hunter + Edge Case Hunter + Acceptance Auditor
+
+### decision-needed
+
+- [x] [Review][Decision] **`next.config.ts` 包装 `withSentryConfig`** — ✅ 已添加。Source Maps 需 Vercel 配置 `SENTRY_AUTH_TOKEN` 后自动启用。
+
+### patch
+
+- [x] [Review][Patch] **sentry.edge.config.ts 缺少 PII 脱敏** — ✅ 已修复. 添加 beforeSend 删除 event.user.email
+- [x] [Review][Patch] **global-error.tsx + error.tsx 缺少 Sentry.captureException** — ✅ 已修复. 导入 Sentry + useEffect 中显式上报
+- [x] [Review][Patch] **服务端错误缺少用户上下文** — ✅ 已修复. API route 认证后调用 Sentry.setUser()
+- [x] [Review][Patch] **sentry.server.config.ts tracesSampleRate 缺少开发环境区分** — ✅ 已修复. 添加 NODE_ENV 判断
+
+### defer
+
+- [x] [Review][Defer] **NEXT_PUBLIC_SENTRY_DSN 无校验逻辑** — DSN 为空时 Sentry 静默丢弃事件，MVP 阶段可接受
+- [x] [Review][Defer] **beforeSend PII 脱敏范围过窄** — 仅删 email，event.request.headers 也可能含 PII，MVP 阶段合理
+- [x] [Review][Defer] **client beforeSend 手动附加 URL** — SDK 自动捕获 URL，手动设置多余但无害
+- [x] [Review][Defer] **replaysOnErrorSampleRate: 1.0** — 预期设计，<1K 用户流量可接受
+- [x] [Review][Defer] **AuthGuard useEffect 依赖项 [requireAuth]** — 预存问题，非本 story 引入

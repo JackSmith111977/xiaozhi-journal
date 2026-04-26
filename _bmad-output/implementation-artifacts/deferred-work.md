@@ -19,3 +19,11 @@
 - **incrementAIUsage 竞态** — 注释已承认 read-then-write 非原子，MVP 阶段可接受
 - **加密格式无分隔符** — 密文+authTag 硬拼接。当前正常工作，格式迁移可在加密方案升级时处理
 - **architecture.md 缺 CI/CD 章节** — 可选完善，不影响功能
+
+## Deferred from: code review of 13-2-error-monitoring.md (2026-04-26)
+
+- **NEXT_PUBLIC_SENTRY_DSN 无校验逻辑** — DSN 为空时 Sentry 静默丢弃事件，MVP 阶段可接受
+- **beforeSend PII 脱敏范围过窄** — 仅删 email，event.request.headers 也可能含 PII，MVP 阶段合理
+- **client beforeSend 手动附加 URL** — SDK 自动捕获 URL，手动设置多余但无害
+- **replaysOnErrorSampleRate: 1.0** — 预期设计，<1K 用户流量可接受
+- **AuthGuard useEffect 依赖项 [requireAuth]** — 预存问题，非本 story 引入
