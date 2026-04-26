@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700&display=swap');
+    body { margin: 0; padding: 0; font-family: 'Noto Sans SC', sans-serif; background-color: #FDF8F5; color: #3D3D3D; }
+    .wrapper { width: 100%; padding: 20px; background-color: #FDF8F5; }
+    .container { max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .header { text-align: center; padding: 32px 24px 24px; background: linear-gradient(135deg, #E8C4A0 0%, #D4856A 100%); }
+    .header h1 { margin: 0; color: #ffffff; font-size: 24px; font-family: 'Noto Serif SC', serif; font-weight: 700; }
+    .header p { margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 14px; }
+    .content { padding: 32px 24px; }
+    .content p { line-height: 1.8; margin: 0 0 16px; font-size: 15px; }
+    .security-box { background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+    .security-box h2 { margin: 0 0 16px; color: #D4856A; font-size: 18px; font-family: 'Noto Serif SC', serif; }
+    .security-box .detail { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+    .security-box .label { color: #8A817C; }
+    .security-box .value { color: #3D3D3D; font-weight: 500; }
+    .warning { background: #FEF3F2; border-radius: 8px; padding: 16px; margin-top: 16px; font-size: 14px; color: #D4856A; }
+    .warning a { color: #D4856A; font-weight: 500; }
+    .footer { padding: 24px; border-top: 1px solid #F5EDE4; text-align: center; }
+    .footer p { margin: 0; color: #8A817C; font-size: 12px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <h1>账号安全提醒</h1>
+        <p>小知 Journal 安全守护</p>
+      </div>
+      <div class="content">
+        <p>我们检测到你的账号发生了安全相关事件，以下是详细信息：</p>
+
+        <div class="security-box">
+          <h2>事件详情</h2>
+          <div class="detail">
+            <span class="label">事件类型</span>
+            <span class="value">{{ .EventType }}</span>
+          </div>
+          <div class="detail">
+            <span class="label">发生时间</span>
+            <span class="value">{{ .Timestamp }}</span>
+          </div>
+          <div class="detail">
+            <span class="label">设备</span>
+            <span class="value">{{ .Device }}</span>
+          </div>
+          <div class="detail">
+            <span class="label">IP 地址</span>
+            <span class="value">{{ .IPAddress }}</span>
+          </div>
+          <div class="detail">
+            <span class="label">浏览器</span>
+            <span class="value">{{ .Browser }}</span>
+          </div>
+        </div>
+
+        <div class="warning">
+          <strong>⚠️ 如果这不是你本人的操作：</strong><br>
+          请立即修改密码，并检查账号设置。如有异常，请联系客服。<br>
+          <a href="{{ .SiteURL }}/settings">前往账号设置</a>
+        </div>
+      </div>
+      <div class="footer">
+        <p>小知 Journal — 每天记录一点温暖</p>
+        <p>此邮件为系统自动发送，请勿直接回复。</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

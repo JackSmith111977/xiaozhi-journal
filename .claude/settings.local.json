@@ -85,7 +85,15 @@
       "WebFetch(domain:base-ui.com)",
       "WebFetch(domain:docs.bmad-method.org)",
       "Bash(pnpm add *)",
-      "Bash(pnpm build *)"
+      "Bash(pnpm build *)",
+      "Bash(export SUPABASE_SMTP_HOST=\"supabase_inbucket_xiaozhi-journal\")",
+      "Bash(export SUPABASE_SMTP_USER=\"local\")",
+      "Bash(export SUPABASE_SMTP_PASS=\"local\")",
+      "Bash(export SUPABASE_SMTP_ADMIN_EMAIL=\"noreply@local.dev\")",
+      "Bash(SUPABASE_SMTP_HOST=\"supabase_inbucket_xiaozhi-journal\" SUPABASE_SMTP_USER=\"local\" SUPABASE_SMTP_PASS=\"local\" SUPABASE_SMTP_ADMIN_EMAIL=\"noreply@local.dev\" npx supabase stop)",
+      "Bash(SUPABASE_SMTP_HOST=\"supabase_inbucket_xiaozhi-journal\" SUPABASE_SMTP_USER=\"local\" SUPABASE_SMTP_PASS=\"local\" SUPABASE_SMTP_ADMIN_EMAIL=\"noreply@local.dev\" npx supabase start)",
+      "Bash(pnpm run *)",
+      "Bash(supabase status *)"
     ]
   }
 }

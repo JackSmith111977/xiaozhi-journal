@@ -1,4 +1,5 @@
 import { supabase } from './supabase/client'
+import { sendSecurityNotification } from './email'
 
 export async function signUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({
@@ -39,7 +40,39 @@ export async function resetPassword(email: string, redirectTo: string) {
   if (error) throw error
 }
 
+/**
+ * 更新密码并发送安全通知邮件
+ *
+ * @param password - 新密码
+ * @returns Promise<void>
+ */
 export async function updatePassword(password: string) {
   const { error } = await supabase.auth.updateUser({ password })
   if (error) throw error
+
+  // 发送密码修改安全通知邮件
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.email) {
+      await sendSecurityNotification(
+        user.email,
+        'password_change',
+        {
+          timestamp: new Date().toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          device: navigator.userAgent.split(' ').slice(-2).join(' ') || navigator.userAgent,
+          ipAddress: '检测中...',
+          browser: navigator.userAgent.split('/')[0],
+        }
+      )
+    }
+  } catch (emailError) {
+    // 邮件发送失败不影响密码更新
+    console.warn('[Auth] 安全通知邮件发送失败:', emailError)
+  }
 }
