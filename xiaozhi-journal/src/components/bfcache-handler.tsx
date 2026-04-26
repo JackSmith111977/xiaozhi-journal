@@ -1,16 +1,25 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useAppStore } from '@/store';
+import { supabase } from '@/lib/supabase/client';
 
 /**
- * Detect bfcache recovery and force full reload to reset Supabase client
- * and all Zustand stores to clean state.
+ * Handle bfcache restore — re-fetch data and re-establish subscriptions
+ * instead of full page reload (which causes flash and loses draft content).
  */
 export function BfcacheHandler() {
   useEffect(() => {
     const handlePageShow = (e: PageTransitionEvent) => {
       if (e.persisted) {
-        location.reload();
+        const store = useAppStore.getState();
+        store.fetchJournals();
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            store.stopRealtimeSubscription();
+            store.startRealtimeSubscription();
+          }
+        });
       }
     };
     window.addEventListener('pageshow', handlePageShow);

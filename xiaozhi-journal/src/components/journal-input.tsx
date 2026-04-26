@@ -22,6 +22,7 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showOfflineMsg, setShowOfflineMsg] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -94,6 +95,9 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
         });
 
         if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          setApiError(errBody.error || '请求失败，请稍后重试');
+          setTimeout(() => setApiError(null), 5000);
           setAIWaiting(false);
           return;
         }
@@ -215,6 +219,16 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
             className="mt-3 text-center text-muted-foreground text-sm bg-secondary rounded-lg py-2 px-4"
           >
             日记已保存，小知在路上~
+          </motion.div>
+        )}
+        {apiError && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mt-3 text-center text-sm bg-accent rounded-lg py-2 px-4 text-white"
+          >
+            {apiError}
           </motion.div>
         )}
       </AnimatePresence>
