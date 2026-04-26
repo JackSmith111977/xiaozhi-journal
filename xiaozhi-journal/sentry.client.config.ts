@@ -8,6 +8,17 @@ Sentry.init({
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 1.0,
   beforeSend(event) {
+    // 噪音过滤 — 浏览器扩展/三方 SDK 已知噪音
+    const exceptionType = event.exception?.values?.[0]?.type;
+    const exceptionValue = event.exception?.values?.[0]?.value;
+    if (
+      exceptionType === 'ExtensionContextInvalidated' ||
+      exceptionType === 'SecurityError' ||
+      exceptionValue?.includes('ResizeObserver loop limit exceeded')
+    ) {
+      return null;
+    }
+
     // 附加当前页面 URL
     if (typeof window !== 'undefined') {
       event.contexts = {

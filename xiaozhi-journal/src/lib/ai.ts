@@ -53,7 +53,7 @@ function parseAIResponse(text: string, fallbackText?: string): AIResponse | null
 }
 
 export async function callAI(content: string, mood: MoodLevel, byokKey?: string): Promise<AIResponse> {
-  const apiKey = byokKey || process.env.DASHSCOPE_API_KEY;
+  const apiKey = byokKey ?? process.env.DASHSCOPE_API_KEY;
   if (!apiKey) {
     return getFallbackResponse(mood);
   }

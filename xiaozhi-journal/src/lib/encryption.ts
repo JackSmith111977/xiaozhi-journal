@@ -16,7 +16,7 @@ function getEncryptionKey(): Buffer {
  * Encrypt an API key using AES-256-GCM with a random IV.
  * @returns Object containing the hex-encoded encrypted key and IV
  */
-export async function encryptKey(key: string): Promise<{ encryptedKey: string; iv: string }> {
+export function encryptKey(key: string): { encryptedKey: string; iv: string } {
   const encKey = getEncryptionKey();
   const iv = randomBytes(16);
 
@@ -38,10 +38,10 @@ export async function encryptKey(key: string): Promise<{ encryptedKey: string; i
  * @param iv Hex-encoded IV used during encryption
  * @returns The original plaintext API key
  */
-export async function decryptKey(
+export function decryptKey(
   encryptedKey: string,
   iv: string
-): Promise<string> {
+): string {
   const encKey = getEncryptionKey();
   const ivBuffer = Buffer.from(iv, 'hex');
 

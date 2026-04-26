@@ -175,15 +175,15 @@ Claude Opus 4.7 (claude-opus-4-7)
 - [x] [Review][Patch] Sentry client `enableLogs` + `replaysSessionSampleRate` — 移除 `enableLogs`，设 `sampleRate=0` [sentry.client.config.ts] — **已修复**
 - [x] [Review][Patch] 服务端 Sentry 无 PII 脱敏 — `sentry.server.config.ts` 加 `beforeSend` [sentry.server.config.ts] — **已修复**
 - [x] [Review][Patch] `online` 事件监听未清理 — useEffect 提取命名 handler + `removeEventListener` [page.tsx:155] — **已修复**
-- [ ] [Review][Patch] DB 错误静默吞掉 — upsert/update 失败只 `console.error`，不返回错误，不计入 Sentry [route.ts:40-60]
-- [ ] [Review][Patch] `||` vs `??` 空字符串歧义 — `byokKey || DASHSCOPE_API_KEY`，`""` 静默回退 [ai.ts:56]
-- [ ] [Review][Patch] Sentry client 浏览器扩展噪音过滤 — `beforeSend` 可选补充 [sentry.client.config.ts]
+- [x] [Review][Patch] DB 错误静默吞掉 — upsert/update 失败只 `console.error`，不返回错误，不计入 Sentry [route.ts:40-60] — **已修复: 加 Sentry.captureException**
+- [x] [Review][Patch] `||` vs `??` 空字符串歧义 — `byokKey || DASHSCOPE_API_KEY`，`""` 静默回退 [ai.ts:56] — **已修复: 改 `??`**
+- [x] [Review][Patch] Sentry client 浏览器扩展噪音过滤 — `beforeSend` 可选补充 [sentry.client.config.ts] — **已修复**
+- [x] [Review][Patch] `encryptKey`/`decryptKey` 标记 `async` 但全同步 — 移除 `async` [encryption.ts:13,32] — **已修复**
+- [x] [Review][Patch] journal 更新顺序问题 — `incrementAIUsage` 先于 `updateJournalStatus`，失败时云-端不一致 [route.ts:206-211] — **已修复: 交换顺序**
+- [x] [Review][Patch] upsert 写旧 tier 值 — 并发时新 tier 可能被旧值覆盖，应排除 tier 字段 [route.ts:26-38] — **已修复: 移除 tier**
 - [ ] [Review][Patch] bfcache `location.reload()` 闪烁 + 丢失草稿 — 需配合 draft save 机制 [bfcache-handler.tsx:12]
-- [ ] [Review][Patch] `encryptKey`/`decryptKey` 标记 `async` 但全同步 — 移除 `async` [encryption.ts:13,32]
-- [ ] [Review][Patch] journal 更新顺序问题 — `incrementAIUsage` 先于 `updateJournalStatus`，失败时云-端不一致 [route.ts:206-211]
 - [ ] [Review][Patch] 429 响应被前端忽略 — 前端直接丢弃 429 响应体，用户无感知 [journal-input.tsx:96-99]
-- [ ] [Review][Patch] `userId` 不安全类型断言 — `user.id as string` 可能传播 undefined [route.ts:137]
-- [ ] [Review][Patch] upsert 写旧 tier 值 — 并发时新 tier 可能被旧值覆盖，应排除 tier 字段 [route.ts:26-38]
+- [x] [Review][Patch] `userId` 不安全类型断言 — `user.id as string` 可能传播 undefined [route.ts:137] — **已修复**
 
 #### Deferred
 - [x] [Review][Defer] 前端从不发 useByok — BYOK 前端功能属 Epic 10，后端代码为未来脚手架，当前无可达路径是预期行为。

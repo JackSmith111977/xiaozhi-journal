@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { callAI } from '@/lib/ai';
 import { decryptKey } from '@/lib/encryption';
 import { createClient } from '@/lib/supabase/server';
@@ -32,13 +33,13 @@ async function incrementAIUsage(
           date: today,
           platform_calls: currentCalls,
           byok_calls: byokCalls + 1,
-          tier,
         },
         { onConflict: 'user_id,date' }
       );
 
     if (upsertError) {
       console.error('[API Route] Failed to increment ai_usage (BYOK):', upsertError.message);
+      Sentry.captureException(upsertError);
     }
   } else {
     // Increment platform_calls for platform mode
@@ -50,13 +51,13 @@ async function incrementAIUsage(
           date: today,
           platform_calls: currentCalls + 1,
           byok_calls: byokCalls,
-          tier,
         },
         { onConflict: 'user_id,date' }
       );
 
     if (upsertError) {
       console.error('[API Route] Failed to increment ai_usage:', upsertError.message);
+      Sentry.captureException(upsertError);
     }
   }
 }
@@ -111,6 +112,7 @@ async function updateJournalStatus(
 
   if (updateError) {
     console.error('[API Route] Failed to update journal status:', updateError.message);
+    Sentry.captureException(updateError);
   }
 }
 
@@ -134,7 +136,7 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
-    const userId = user.id as string;
+    const userId = user.id;
 
     // Check today's AI usage
     const today = new Date().toISOString().split('T')[0] ?? '';
@@ -202,13 +204,13 @@ export async function POST(request: Request) {
       });
     }
 
-    // Increment usage counters after successful AI call
-    await incrementAIUsage(supabase, userId, today, platformCalls, byokCalls, tier, effectiveByok);
-
-    // Update journal status in Supabase after AI success
+    // Update journal status first — data persistence > usage counting
     if (journalId && !result.fromFallback) {
       await updateJournalStatus(supabase, journalId, userId, result);
     }
+
+    // Increment usage counters after journal update
+    await incrementAIUsage(supabase, userId, today, platformCalls, byokCalls, tier, effectiveByok);
 
     return NextResponse.json({
       response: result.response,
