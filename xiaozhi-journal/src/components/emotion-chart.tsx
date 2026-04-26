@@ -12,12 +12,12 @@ interface EmotionChartProps {
 
 const COLORS = ['#A8C5A0', '#B8B87A', '#C8AB94', '#D89E88', '#D4856A'];
 
-// Chart layout constants
+// Chart layout constants (UX spec: 120px height for desktop)
 const SVG_WIDTH = 640;
-const CHART_TOP = 30;      // top padding for emoji
-const CHART_BOTTOM = 110;  // bottom data boundary
+const CHART_TOP = 20;      // top padding for emoji
+const CHART_BOTTOM = 100;  // bottom data boundary
 const CHART_HEIGHT = CHART_BOTTOM - CHART_TOP; // 80
-const SVG_HEIGHT = 160;
+const SVG_HEIGHT = 120;
 
 export function EmotionChart({ journals }: EmotionChartProps) {
   const [hovered, setHovered] = useState<number | null>(null);
