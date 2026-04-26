@@ -15,6 +15,11 @@ interface Profile {
   avatar_url: string | null;
 }
 
+interface ByokStatus {
+  hasKey: boolean;
+  provider: string | null;
+}
+
 export default function SettingsPage() {
   return (
     <AuthGuard>
@@ -39,6 +44,14 @@ function SettingsContent() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // BYOK 状态
+  const [byokStatus, setByokStatus] = useState<ByokStatus>({ hasKey: false, provider: null });
+  const [byokKey, setByokKey] = useState('');
+  const [testingByok, setTestingByok] = useState(false);
+  const [deletingByok, setDeletingByok] = useState(false);
+  const [showByokDeleteConfirm, setShowByokDeleteConfirm] = useState(false);
+  const [loadingByok, setLoadingByok] = useState(true);
 
   // Cleanup message timers on unmount
   useEffect(() => {
@@ -77,6 +90,27 @@ function SettingsContent() {
           setNickname(data.nickname || user.email?.split('@')[0] || '用户');
         }
         setLoadingProfile(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [user]);
+
+  // Load BYOK status
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    fetch('/api/settings/byok')
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        setByokStatus({ hasKey: data.hasKey, provider: data.provider });
+        setLoadingByok(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setByokStatus({ hasKey: false, provider: null });
+        setLoadingByok(false);
       });
 
     return () => { cancelled = true; };
@@ -239,6 +273,66 @@ function SettingsContent() {
     }
   };
 
+  // BYOK handlers
+  const handleTestByok = async () => {
+    const trimmed = byokKey.trim();
+    if (!trimmed) {
+      setMessage({ type: 'error', text: '请输入 API Key' });
+      return;
+    }
+
+    setTestingByok(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/settings/byok', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: trimmed }),
+      });
+
+      const data = await res.json();
+
+      if (data.valid && data.saved) {
+        setByokStatus({ hasKey: true, provider: 'dashscope' });
+        setByokKey('');
+        setMessage({ type: 'success', text: 'Key 有效，已保存' });
+        autoDismiss(() => setMessage(null));
+      } else if (data.valid && !data.saved) {
+        setMessage({ type: 'error', text: data.message || 'Key 有效但保存失败' });
+      } else {
+        setMessage({ type: 'error', text: data.message || 'API Key 无效，请检查' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: '验证失败，请稍后重试' });
+    } finally {
+      setTestingByok(false);
+    }
+  };
+
+  const handleDeleteByok = async () => {
+    setDeletingByok(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/settings/byok', { method: 'DELETE' });
+      const data = await res.json();
+
+      if (data.deleted) {
+        setByokStatus({ hasKey: false, provider: null });
+        setMessage({ type: 'success', text: '已切换回平台 AI' });
+        autoDismiss(() => setMessage(null));
+      } else {
+        setMessage({ type: 'error', text: data.message || '删除失败' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: '删除失败，请稍后重试' });
+    } finally {
+      setDeletingByok(false);
+      setShowByokDeleteConfirm(false);
+    }
+  };
+
   // Cache-busting: only re-fetch when avatar_url actually changes
   const avatarUrl = useMemo(() => {
     if (!profile?.avatar_url) return null;
@@ -327,6 +421,106 @@ function SettingsContent() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* BYOK 配置 */}
+        <div className="mb-8 pt-8 border-t border-border">
+          <h2 className="text-lg text-foreground mb-4 font-serif">AI 配置</h2>
+          {loadingByok ? (
+            <div className="text-muted-foreground animate-pulse">加载中...</div>
+          ) : (
+            <>
+              <div className="mb-3">
+                <p className="text-sm text-muted-foreground mb-1">
+                  当前模式：{byokStatus.hasKey ? 'BYOK（自带 Key）' : '平台 AI（每日 5 次）'}
+                </p>
+                {byokStatus.hasKey && (
+                  <p className="text-xs text-chart-1">✓ Key 已配置，不限次数</p>
+                )}
+              </div>
+
+              {!byokStatus.hasKey && (
+                <div className="mb-4">
+                  <label className="text-sm text-muted-foreground mb-1 block">
+                    配置 BYOK Key（可选）
+                  </label>
+                  <div className="flex gap-3">
+                    <input
+                      type="password"
+                      value={byokKey}
+                      onChange={(e) => setByokKey(e.target.value)}
+                      placeholder="输入你的 DashScope API Key"
+                      className="flex-1 bg-transparent border-b-2 border-border py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors font-sans"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleTestByok}
+                      disabled={testingByok || !byokKey.trim()}
+                      className="px-4 py-2 rounded-xl text-sm text-white font-medium bg-chart-1 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {testingByok ? '验证中...' : '测试'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    BYOK 模式不限次数，使用自己的 Key 调用 AI
+                  </p>
+                </div>
+              )}
+
+              {byokStatus.hasKey && (
+                <button
+                  type="button"
+                  onClick={() => setShowByokDeleteConfirm(true)}
+                  disabled={deletingByok}
+                  className="w-full py-3 rounded-xl text-sm font-medium text-accent border-2 border-accent transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  删除 BYOK Key
+                </button>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* BYOK 删除确认弹窗 */}
+        {showByokDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4"
+            onClick={() => { if (!deletingByok) setShowByokDeleteConfirm(false); }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-background rounded-2xl p-6 max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-lg text-foreground mb-3 font-serif">
+                确认删除 BYOK Key？
+              </h2>
+              <p className="text-sm text-muted-foreground mb-6 font-sans">
+                删除后将切换回平台 AI 模式（每日 5 次限制）
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowByokDeleteConfirm(false)}
+                  disabled={deletingByok}
+                  className="flex-1 py-3 rounded-xl text-sm font-medium bg-muted text-foreground transition-opacity disabled:opacity-40"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteByok}
+                  disabled={deletingByok}
+                  className="flex-1 py-3 rounded-xl text-sm font-medium text-white bg-accent transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {deletingByok ? '删除中...' : '确认删除'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
 
         {/* Sign out & Danger zone */}

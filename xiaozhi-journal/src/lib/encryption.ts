@@ -37,23 +37,42 @@ export function encryptKey(key: string): { encryptedKey: string; iv: string } {
  * @param encryptedKey Hex-encoded encrypted key (with auth tag appended)
  * @param iv Hex-encoded IV used during encryption
  * @returns The original plaintext API key
+ * @throws Error if parameters are invalid or decryption fails
  */
 export function decryptKey(
   encryptedKey: string,
   iv: string
 ): string {
-  const encKey = getEncryptionKey();
-  const ivBuffer = Buffer.from(iv, 'hex');
+  // 参数校验
+  if (!encryptedKey || typeof encryptedKey !== 'string') {
+    throw new Error('encryptedKey is required and must be a string')
+  }
+  if (!iv || typeof iv !== 'string') {
+    throw new Error('iv is required and must be a string')
+  }
+
+  // IV 必须是 32 个 hex 字符（16 bytes）
+  if (iv.length !== 32 || !/^[0-9a-fA-F]+$/.test(iv)) {
+    throw new Error('iv must be 32 hex characters (16 bytes)')
+  }
+
+  // encryptedKey 至少需要 32 个 hex 字符（auth tag）
+  if (encryptedKey.length < 32 || !/^[0-9a-fA-F]+$/.test(encryptedKey)) {
+    throw new Error('encryptedKey must be at least 32 hex characters')
+  }
+
+  const encKey = getEncryptionKey()
+  const ivBuffer = Buffer.from(iv, 'hex')
 
   // The last 16 bytes of encryptedKey are the auth tag
-  const encryptedHex = encryptedKey.slice(0, -32);
-  const authTagHex = encryptedKey.slice(-32);
+  const encryptedHex = encryptedKey.slice(0, -32)
+  const authTagHex = encryptedKey.slice(-32)
 
-  const decipher = createDecipheriv('aes-256-gcm', encKey, ivBuffer);
-  decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
+  const decipher = createDecipheriv('aes-256-gcm', encKey, ivBuffer)
+  decipher.setAuthTag(Buffer.from(authTagHex, 'hex'))
 
-  let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
+  let decrypted = decipher.update(encryptedHex, 'hex', 'utf8')
+  decrypted += decipher.final('utf8')
 
-  return decrypted;
+  return decrypted
 }

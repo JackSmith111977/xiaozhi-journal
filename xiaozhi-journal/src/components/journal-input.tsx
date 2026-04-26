@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/store';
@@ -23,6 +24,8 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
   const [showSuccess, setShowSuccess] = useState(false);
   const [showOfflineMsg, setShowOfflineMsg] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [invalidKeyMsg, setInvalidKeyMsg] = useState<string | null>(null);
+  const [byokEnabled, setByokEnabled] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -39,6 +42,22 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
       textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
     }
   }, [content]);
+
+  // 查询 BYOK 状态
+  useEffect(() => {
+    const fetchByokStatus = async () => {
+      try {
+        const res = await fetch('/api/settings/byok');
+        if (res.ok) {
+          const data = await res.json();
+          setByokEnabled(data.hasKey === true);
+        }
+      } catch {
+        // BYOK status check best-effort
+      }
+    };
+    fetchByokStatus();
+  }, []);
 
   const saveDraft = useCallback(async (text: string) => {
     try {
@@ -91,7 +110,12 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
         const res = await fetch('/api/journal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: journal.id, content: journal.content, mood: journal.mood }),
+          body: JSON.stringify({
+            id: journal.id,
+            content: journal.content,
+            mood: journal.mood,
+            useByok: byokEnabled,
+          }),
         });
 
         if (!res.ok) {
@@ -103,6 +127,11 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
         }
 
         const data = await res.json();
+        // BYOK Key 无效提示
+        if (data.invalidKey) {
+          setInvalidKeyMsg('你的 API Key 似乎不太对，检查一下？也可以先用平台 AI');
+          setTimeout(() => setInvalidKeyMsg(null), 8000);
+        }
         if (data?.response) {
           updateAIResponse(journal.id, data);
         } else {
@@ -229,6 +258,16 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
             className="mt-3 text-center text-sm bg-accent rounded-lg py-2 px-4 text-white"
           >
             {apiError}
+          </motion.div>
+        )}
+        {invalidKeyMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mt-3 text-center text-sm bg-warning rounded-lg py-2 px-4 text-white"
+          >
+            {invalidKeyMsg} <Link href="/settings" className="underline">检查设置</Link>
           </motion.div>
         )}
       </AnimatePresence>

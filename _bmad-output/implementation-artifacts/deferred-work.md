@@ -1,6 +1,17 @@
 # Deferred Work
 
-## Deferred from: code review of 3-1-ai-api-route-handler (2026-04-26)
+## Deferred from: code review of 3-2-byok-settings (2026-04-26)
+
+- **API Key 内存未清除** — JS string immutable，GC 后清除；MVP 可接受
+- **Rate Limiting 缺失** — Story 10.2 实现限次；BYOK 无限次无需
+- **CSRF 保护缺失** — Next.js cookie-based auth 已处理
+- **Upsert 并发竞态** — DB unique constraint 已配置，RLS 保护
+- **Content-Type 未验证** — Next.js 自动处理 JSON parse error
+- **Auth Pattern 不一致** — 样式差异，不影响功能
+- **`new Date().toISOString()` 时钟偏差** — MVP 可接受，分布式场景后续优化
+- **环境变量延迟 panic** — 启动检查可选，当前运行时校验足够
+- **`invalidKey` 字段不一致** — 平台模式无此字段，前端可按场景处理
+- **Key enumeration timing** — MVP 阶段风险低，后续可加 constant-time compare
 - BYOK 移除 — 按 spec 推迟至 Story 3.2
 - 频率限制 + 使用量追踪移除 — 按 spec 推迟至 Story 10.2
 - 数据库持久化移除 — 前端 IndexedDB 已覆盖，Story 10.2 恢复服务端持久化
