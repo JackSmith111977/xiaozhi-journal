@@ -146,9 +146,9 @@ development_status:
   13-2-error-monitoring: done
   13-3-smtp-email-service: done
   13-4-transactional-email-system: done
-  13-5-domain-ssl-config: backlog
-  13-6-database-backup-strategy: backlog
-  13-7-vercel-three-env-config: backlog
+  13-5-domain-ssl-config: done
+  13-6-database-backup-strategy: done
+  13-7-vercel-three-env-config: done
   13-8-preview-deployment-verification: backlog
   13-9-pnpm-standardization: done
   epic-13-retrospective: optional

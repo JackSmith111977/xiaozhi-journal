@@ -27,10 +27,10 @@ So that 我能正常使用账号功能（阻塞 Story 8.3）。
 
 **Given** SMTP 配置完成
 **When** 在 `.env.local` 中添加环境变量
-**Then** 包含 `SUPABASE_SMTP_HOST`（如 `smtpdm.aliyun.com` 或 `smtp.resend.com`）
+**Then** 包含 `SUPABASE_SMTP_HOST`（`smtp.resend.com`）
 **And** 包含 `SUPABASE_SMTP_PORT`（465 或 587）
-**And** 包含 `SUPABASE_SMTP_USER`（发信邮箱）
-**And** 包含 `SUPABASE_SMTP_PASS`（SMTP 密码/API Key）
+**And** 包含 `SUPABASE_SMTP_USER`（`resend`，固定值）
+**And** 包含 `SUPABASE_SMTP_PASS`（Resend API Key）
 **And** `SUPABASE_SMTP_ADMIN_EMAIL` 设为 noreply 域名邮箱
 **And** `.env.example` 包含上述变量占位符（不暴露真实值）
 
@@ -82,8 +82,8 @@ So that 我能正常使用账号功能（阻塞 Story 8.3）。
 ### 架构上下文
 
 - **阻塞关系**: 此 story 阻塞 Story 8.3（密码重置）和 Story 13.4（事务邮件系统）
-- **SMTP 选型**: 架构文档已确认使用 **阿里云 DirectMail**（国内可达性，免费 2000 封/天）
-- **备选方案**: Resend（`smtp.resend.com:587`），开发阶段可用，生产环境需切换 DirectMail
+- **SMTP 选型**: 已变更 — 使用 **Resend**（`smtp.resend.com`，免费 3000 封/月）
+- **原选型**: 阿里云 DirectMail（2000 封总量，一次性，已弃用）
 - **本地开发**: Supabase 本地使用 Inbucket 测试邮件服务器，不实际发送外部邮件
 
 ### 技术规格
@@ -102,11 +102,11 @@ sender_name = "小知 Journal"
 
 **环境变量模板**（`.env.example`）:
 ```
-# SMTP Email Service (阿里云 DirectMail 或 Resend)
-SUPABASE_SMTP_HOST=smtpdm.aliyun.com
-SUPABASE_SMTP_PORT=465
-SUPABASE_SMTP_USER=noreply@yourdomain.com
-SUPABASE_SMTP_PASS=<smtp_password>
+# SMTP Email Service (Resend)
+SUPABASE_SMTP_HOST=smtp.resend.com
+SUPABASE_SMTP_PORT=587
+SUPABASE_SMTP_USER=resend
+SUPABASE_SMTP_PASS=<resend_api_key>
 SUPABASE_SMTP_ADMIN_EMAIL=noreply@yourdomain.com
 ```
 
