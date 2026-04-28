@@ -1,3 +1,4 @@
+ 
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -26,8 +27,9 @@ function ConfirmContent() {
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    const timer = redirectTimerRef.current
     return () => {
-      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      if (timer) clearTimeout(timer);
     };
   }, []);
 
@@ -49,7 +51,8 @@ function ConfirmContent() {
       await sendEmailConfirmation(email);
       setSent(true);
       setCooldown(60);
-    } catch (err: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err: unknown) {
       // Regardless of success/failure from Supabase side, show "sent" message
       // to avoid revealing whether the email exists
       setSent(true);

@@ -151,7 +151,7 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
       onExitComplete?.();
       savingRef.current = false;
     }, 600);
-  }, [content, selectedMood, addJournal, setAIWaiting, updateAIResponse, onExitComplete]);
+  }, [content, selectedMood, addJournal, setAIWaiting, updateAIResponse, onExitComplete, byokEnabled]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -206,11 +206,13 @@ export function JournalInput({ onExitComplete }: { onExitComplete?: () => void }
   }, [content]);
 
   // 网络恢复时淡出离线提示（AC3）
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (isOnline && showOfflineMsg) {
       setShowOfflineMsg(false);
     }
   }, [isOnline, showOfflineMsg]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return (
     <motion.div

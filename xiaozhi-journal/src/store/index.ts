@@ -304,7 +304,8 @@ export function initializeAuth() {
       initialLoginLogged = true;
       recordLoginLog(session!.user.id, 'email');
     }
-  }).catch((err) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  }).catch((_err) => {
     clearTimeout(timeoutId);
     store.setUser(null);
     store.setAuthLoading(false);

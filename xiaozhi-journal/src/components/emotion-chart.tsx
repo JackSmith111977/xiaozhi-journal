@@ -103,7 +103,8 @@ export function EmotionChart({ journals }: EmotionChartProps) {
         />
         {points.map((point, i) => {
           const day = last7Days.find((d) => d.date === point.date);
-          const journal = day?.journals[0];
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const _journal = day?.journals[0];
           const isHovered = hovered === i;
           return (
             <g key={i} onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)} className="cursor-pointer">

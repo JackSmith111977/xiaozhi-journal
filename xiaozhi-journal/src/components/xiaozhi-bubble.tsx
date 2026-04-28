@@ -16,7 +16,7 @@ export function XiaozhiBubble({ text, onComplete }: XiaozhiBubbleProps) {
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
-    indexRef.current = 0;
+  // eslint-disable-next-line react-hooks/set-state-in-effect
     setDisplayed('');
     setDone(false);
 

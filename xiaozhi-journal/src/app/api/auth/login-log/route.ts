@@ -38,6 +38,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 更新 profiles 登录统计（原子递增 login_count）
+    const { error: profileError } = await supabase.rpc('increment_login_count', {
+      user_uuid: user.id,
+    })
+    if (profileError) {
+      console.warn('[login-log] Profile update failed:', profileError.message)
+      // 静默忽略，不阻塞
+    }
+
     return createJsonResponseWithCookies(
       { success: true },
       { status: 200 },

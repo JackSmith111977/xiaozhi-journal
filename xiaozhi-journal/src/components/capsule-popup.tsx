@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { recordClose } from '@/lib/time-capsule';
@@ -67,7 +67,7 @@ export function CapsulePopup({ journal, title, onClose }: CapsulePopupProps) {
             <p className="text-[#3D3D3D] mb-2">{journal.content}</p>
             {journal.goldenQuote && (
               <p className="text-accent italic text-sm font-serif italic">
-                "{journal.goldenQuote}"
+                &ldquo;{journal.goldenQuote}&rdquo;
               </p>
             )}
             <p className="text-xs text-[#8A817C] mt-2">

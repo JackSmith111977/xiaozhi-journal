@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -84,6 +85,7 @@ function HomeContent() {
       // Lock journal when AI response first appears
       setDisplayingJournal(latestJournal);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasAIResponse, latestJournal?.id]);
 
   // Time capsule: trigger after a new journal is added

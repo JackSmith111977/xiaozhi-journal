@@ -43,6 +43,7 @@ Deno.serve(async (req: Request) => {
   try {
     // Parse request body
     const body: EmailRequest = await req.json()
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { to, subject, template, templatePath, data } = body
 
     // Validate required fields

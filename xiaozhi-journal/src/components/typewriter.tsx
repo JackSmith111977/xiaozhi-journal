@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
+import { useReducedMotion } from 'motion/react';
 
 interface TypewriterProps {
   text: string;
@@ -13,6 +13,7 @@ export function Typewriter({ text, speed = 50, onComplete }: TypewriterProps) {
   const [displayed, setDisplayed] = useState('');
   const reducedMotion = useReducedMotion();
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (reducedMotion) {
       setDisplayed(text);
@@ -31,7 +32,8 @@ export function Typewriter({ text, speed = 50, onComplete }: TypewriterProps) {
       }
     }, speed);
     return () => clearInterval(timer);
-  }, [text, speed, reducedMotion]);
+  }, [text, speed, reducedMotion, onComplete]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return <span>{displayed}</span>;
 }

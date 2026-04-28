@@ -28,17 +28,18 @@ export async function createCapsule(content: string, openAt: Date): Promise<Time
   };
 }
 
-export async function getAvailableCapsules(userId: string): Promise<TimeCapsule[]> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function getAvailableCapsules(_userId: string): Promise<TimeCapsule[]> {
   return [];
 }
 
-export async function openCapsule(capsuleId: string): Promise<TimeCapsule | null> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function openCapsule(_capsuleId: string): Promise<TimeCapsule | null> {
   return null;
 }
 
-export async function checkTimeCapsule(
-  latest: Journal,
-  journals: Journal[]
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function checkTimeCapsule(latest: Journal, _journals: Journal[]
 ): Promise<TimeCapsuleMatchResult | null> {
   // Stub - no matching logic
   console.log('checkTimeCapsule stub called for:', latest.id);

@@ -78,7 +78,7 @@ export default function HistoryPage() {
                       </p>
                       {journal.goldenQuote && (
                         <p className="text-accent italic text-sm mt-1 truncate font-serif italic">
-                          "{journal.goldenQuote}"
+                          &ldquo;{journal.goldenQuote}&rdquo;
                         </p>
                       )}
                     </div>

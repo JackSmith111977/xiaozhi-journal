@@ -7,7 +7,8 @@ export async function deleteAccount(userId?: string): Promise<boolean> {
   return true;
 }
 
-export async function getAccountInfo(userId?: string): Promise<{
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function getAccountInfo(_userId?: string): Promise<{
   email: string;
   createdAt: Date;
   journalCount: number;

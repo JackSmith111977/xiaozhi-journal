@@ -51,7 +51,8 @@ export async function renderShareCardToCanvas(
   return resultCanvas;
 }
 
-export function downloadShareCard(imageUrl: string): void {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function downloadShareCard(_imageUrl: string): void {
   // Stub - no actual download
   console.log('downloadShareCard stub called');
 }

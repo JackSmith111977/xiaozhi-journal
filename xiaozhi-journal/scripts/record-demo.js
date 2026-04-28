@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { chromium } = require('playwright');
 const path = require('path');
 
@@ -42,7 +43,7 @@ const path = require('path');
   await page.waitForTimeout(6000);
 
   console.log('🎬 Step 6: Verify AI response appeared');
-  const snapshot = await page.locator('main').screenshot({ path: path.join(videoDir, 'result-screenshot.png') });
+  await page.locator('main').screenshot({ path: path.join(videoDir, 'result-screenshot.png') });
   console.log('Screenshot saved');
 
   console.log('🎬 Step 7: Check emotion chart');

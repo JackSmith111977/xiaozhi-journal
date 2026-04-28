@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth';
 import { exportUserData } from '@/lib/export';
 import { deleteAccount } from '@/lib/account';
-import { useAppStore, initializeAuth } from '@/store';
+import { useAppStore } from '@/store';
 import { AuthGuard } from '@/components/auth-guard';
 import { motion } from 'motion/react';
 
@@ -334,10 +334,9 @@ function SettingsContent() {
   };
 
   // Cache-busting: only re-fetch when avatar_url actually changes
-  const avatarUrl = useMemo(() => {
-    if (!profile?.avatar_url) return null;
-    return supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl;
-  }, [profile?.avatar_url]);
+  const avatarUrl = profile?.avatar_url
+    ? supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl
+    : null;
 
   return (
     <main className="min-h-screen bg-background px-6 py-12">
@@ -357,6 +356,7 @@ function SettingsContent() {
             className="w-20 h-20 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
           >
             {avatarUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={avatarUrl}
                 alt="头像"

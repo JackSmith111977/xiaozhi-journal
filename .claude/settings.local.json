@@ -93,7 +93,10 @@
       "Bash(SUPABASE_SMTP_HOST=\"supabase_inbucket_xiaozhi-journal\" SUPABASE_SMTP_USER=\"local\" SUPABASE_SMTP_PASS=\"local\" SUPABASE_SMTP_ADMIN_EMAIL=\"noreply@local.dev\" npx supabase stop)",
       "Bash(SUPABASE_SMTP_HOST=\"supabase_inbucket_xiaozhi-journal\" SUPABASE_SMTP_USER=\"local\" SUPABASE_SMTP_PASS=\"local\" SUPABASE_SMTP_ADMIN_EMAIL=\"noreply@local.dev\" npx supabase start)",
       "Bash(pnpm run *)",
-      "Bash(supabase status *)"
+      "Bash(supabase status *)",
+      "Bash(start *)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm tsc *)"
     ]
   }
 }
