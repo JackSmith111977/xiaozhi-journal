@@ -1,36 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { withAuth, createJsonResponseWithCookies } from '@/lib/middleware/withAuth'
 
 /**
- * 邮件发送 API Route Handler
+ * 邵件发送 API Route Handler
  *
  * 处理事务邮件发送请求：
  * - 本地开发：记录邮件到日志（模拟发送）
  * - 生产环境：调用 Supabase Edge Function 发送真实邮件
- *
- * 认证要求：
- * - 请求必须携带有效的 Supabase session cookie
- * - 仅允许已登录用户调用（服务端调用场景后续需扩展认证方式）
- *
- * Request Body:
- * {
- *   to: string        - 收件人邮箱
- *   subject: string   - 邮件主题
- *   template: string  - 模板类型
- *   templatePath: string - 模板路径
- *   data: object      - 模板变量
- * }
  */
 
 export async function POST(request: NextRequest) {
-  // 验证用户已登录（session cookie 自动携带）
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (!user || authError) {
-    return NextResponse.json(
-      { message: '未授权，请先登录' },
-      { status: 401 }
-    )
+  const { user, response: authResponse } = await withAuth(request)
+  if (!user) {
+    return NextResponse.json({ error: '请先登录' }, { status: 401 })
   }
 
   try {
@@ -43,7 +25,7 @@ export async function POST(request: NextRequest) {
     // 验证必填字段
     if (!to || !sanitizedSubject || !template) {
       return NextResponse.json(
-        { message: '缺少必填字段: to, subject, template' },
+        { error: '缺少必填字段: to, subject, template' },
         { status: 400 }
       )
     }
@@ -52,7 +34,7 @@ export async function POST(request: NextRequest) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(to)) {
       return NextResponse.json(
-        { message: '邮箱格式无效' },
+        { error: '邮箱格式无效' },
         { status: 400 }
       )
     }
@@ -67,13 +49,17 @@ export async function POST(request: NextRequest) {
       console.log(`  变量数据:`, data)
       console.log('  → 本地开发邮件会发送到 Inbucket (http://localhost:54324)')
 
-      return NextResponse.json({
-        message: '邮件发送成功（本地开发模拟）',
-        to,
-        subject: sanitizedSubject,
-        template,
-        simulated: true,
-      })
+      return createJsonResponseWithCookies(
+        {
+          message: '邮件发送成功（本地开发模拟）',
+          to,
+          subject: sanitizedSubject,
+          template,
+          simulated: true,
+        },
+        { status: 200 },
+        authResponse
+      )
     }
 
     // 生产环境：调用 Supabase Edge Function
@@ -84,7 +70,7 @@ export async function POST(request: NextRequest) {
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('缺少 Supabase 配置')
       return NextResponse.json(
-        { message: '邮件服务配置缺失' },
+        { error: '邮件服务配置缺失' },
         { status: 500 }
       )
     }
@@ -109,23 +95,27 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const error = await response.text()
-      console.error('Edge Function 邮件发送失败:', error)
+      console.error('Edge Function 邵件发送失败:', error)
       return NextResponse.json(
-        { message: '邮件发送失败', error },
+        { error: '邮件发送失败', details: error },
         { status: 500 }
       )
     }
 
     const result = await response.json()
-    return NextResponse.json({
-      message: '邮件发送成功',
-      ...result,
-    })
+    return createJsonResponseWithCookies(
+      {
+        message: '邮件发送成功',
+        ...result,
+      },
+      { status: 200 },
+      authResponse
+    )
 
   } catch (error) {
     console.error('邮件发送 API 错误:', error)
     return NextResponse.json(
-      { message: '邮件发送失败，请稍后重试' },
+      { error: '邮件发送失败，请稍后重试' },
       { status: 500 }
     )
   }

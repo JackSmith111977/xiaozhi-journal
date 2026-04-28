@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
-import { createClient } from '@/lib/supabase/server'
+import { withAuth, createJsonResponseWithCookies } from '@/lib/middleware/withAuth'
 import { callAI } from '@/lib/ai'
 import { decryptKey } from '@/lib/encryption'
 import type { MoodLevel } from '@/types'
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data, error: authError } = await supabase.auth.getUser()
-  const user = data?.user ?? null
-
-  if (!user || authError) {
-    return NextResponse.json(
-      { message: '未授权，请先登录' },
-      { status: 401 }
-    )
+  const { user, supabase, response: authResponse } = await withAuth(request)
+  if (!user) {
+    return NextResponse.json({ error: '请先登录' }, { status: 401 })
   }
 
   Sentry.setUser({ id: user.id, email: user.email ?? undefined })
@@ -93,25 +87,33 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      return NextResponse.json({
-        id,
-        response: result.response,
-        goldenQuote: result.goldenQuote,
-        moodLabel: result.moodLabel,
-        fromFallback: result.fromFallback,
-      })
+      return createJsonResponseWithCookies(
+        {
+          id,
+          response: result.response,
+          goldenQuote: result.goldenQuote,
+          moodLabel: result.moodLabel,
+          fromFallback: result.fromFallback,
+        },
+        { status: 200 },
+        authResponse
+      )
     }
 
     // 平台 Key 模式
     const result = await callAI(content.trim(), mood as MoodLevel)
 
-    return NextResponse.json({
-      id,
-      response: result.response,
-      goldenQuote: result.goldenQuote,
-      moodLabel: result.moodLabel,
-      fromFallback: result.fromFallback,
-    })
+    return createJsonResponseWithCookies(
+      {
+        id,
+        response: result.response,
+        goldenQuote: result.goldenQuote,
+        moodLabel: result.moodLabel,
+        fromFallback: result.fromFallback,
+      },
+      { status: 200 },
+      authResponse
+    )
   } catch (error) {
     console.error('[API Route] Error:', error)
     Sentry.captureException(error)

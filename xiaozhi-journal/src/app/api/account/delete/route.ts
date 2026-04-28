@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { withAuth, createJsonResponseWithCookies } from '@/lib/middleware/withAuth'
 
 /**
  * DELETE /api/account/delete
@@ -11,7 +12,12 @@ import { NextResponse } from 'next/server'
  * Security: Only uses SUPABASE_SERVICE_ROLE_KEY on the server side.
  * The caller must have a valid Supabase session.
  */
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  const { user, response: authResponse } = await withAuth(request)
+  if (!user) {
+    return NextResponse.json({ error: '请先登录' }, { status: 401 })
+  }
+
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceRoleKey) {
     return NextResponse.json(
@@ -20,33 +26,9 @@ export async function DELETE() {
     )
   }
 
-  // Verify the caller has a valid session via cookie
   const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll() {
-          // Route handlers can set cookies, but not needed for auth check
-        },
-      },
-    }
-  )
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json(
-      { error: '未登录，无法删除账户' },
-      { status: 401 }
-    )
-  }
-
-  // Create admin client with service role
+  // Create admin client with service role (separate from withAuth client)
   const adminClient = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     serviceRoleKey,
@@ -70,5 +52,9 @@ export async function DELETE() {
     )
   }
 
-  return NextResponse.json({ success: true })
+  return createJsonResponseWithCookies(
+    { success: true },
+    { status: 200 },
+    authResponse
+  )
 }
