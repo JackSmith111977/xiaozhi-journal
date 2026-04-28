@@ -254,8 +254,20 @@ const createSyncSlice: StateCreator<AppStore, [], [], SyncSlice> = (set) => ({
 
 // ── Store ────────────────────────────────────────────────────────────────────
 
+function recordLoginLog(userId: string, method: 'email' | 'wechat' = 'email') {
+  // 静默记录，失败不阻塞登录
+  fetch('/api/auth/login-log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ loginMethod: method }),
+  }).catch(() => {
+    // 网络异常或端点不可用时静默忽略
+  })
+}
+
 let activeSubscription: Subscription | null = null;
 let initialized = false;
+let initialLoginLogged = false;
 
 export const useAppStore = create<AppStore>()((...a) => ({
   ...createAuthSlice(...a),
@@ -288,6 +300,9 @@ export function initializeAuth() {
       setUserId(session!.user.id);
       useAppStore.getState().startRealtimeSubscription();
       useAppStore.getState().initOfflineSync();
+      // 记录 session 恢复
+      initialLoginLogged = true;
+      recordLoginLog(session!.user.id, 'email');
     }
   }).catch((err) => {
     clearTimeout(timeoutId);
@@ -305,6 +320,10 @@ export function initializeAuth() {
           setUserId(session!.user.id);
           useAppStore.getState().startRealtimeSubscription();
           useAppStore.getState().initOfflineSync();
+          // 仅 SIGNED_IN 时记录（TOKEN_REFRESHED 不记录），去重 session 恢复已记录
+          if (event === 'SIGNED_IN' && !initialLoginLogged) {
+            recordLoginLog(session!.user.id, 'email');
+          }
         }
       } else if (event === 'SIGNED_OUT') {
         useAppStore.getState().stopRealtimeSubscription();

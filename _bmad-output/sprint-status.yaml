@@ -1,0 +1,176 @@
+# generated: 2026-04-28
+# last_updated: 2026-04-28
+# project: Xiaozhi Journal
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-04-28
+last_updated: 2026-04-28
+project: Xiaozhi Journal
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: 项目基础适配
+  epic-1: done
+  1-1-supabase-client-init-env: done
+  1-2-indexeddb-cache-layer-refactor: done
+  1-3-seed-data-empty-state: done
+  epic-1-retrospective: done
+
+  # Epic 2: 3 秒心情打卡
+  epic-2: done
+  2-1-mood-emoji-selector: done
+  2-2-journal-input-save: done
+  epic-2-retrospective: done
+
+  # Epic 3: AI 温暖回应
+  epic-3: done
+  3-1-ai-api-route-handler: done
+  3-2-byok-settings: done
+  3-3-typewriter-quote-card: done
+  3-4-offline-async-callback: done
+  epic-3-retrospective: done
+
+  # Epic 4: 情绪波形图
+  epic-4: done
+  4-1-svg-waveform-chart: done
+  4-2-hover-tooltip-no-data: done
+  epic-4-retrospective: done
+
+  # Epic 5: 日记历史与详情
+  epic-5: backlog
+  5-1-journal-history-list: backlog
+  5-2-single-journal-detail: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: 时间胶囊
+  epic-6: backlog
+  6-1-history-match-popup-trigger: backlog
+  6-2-view-history-journal: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: 金句分享
+  epic-7: backlog
+  7-1-quote-share-image: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: 用户注册与登录
+  epic-8: in-progress
+  8-1-email-registration: done
+  8-2-email-login: done
+  8-3-password-reset: done
+  8-4-profile-management: done
+  8-5-email-confirmation: done
+  8-6-password-policy: done
+  8-7-api-auth-middleware: done
+  8-8-indexeddb-user-isolation: done
+  8-9-audit-log-tables: review
+  8-10-profiles-table-extension: backlog
+  8-11-initialize-auth-race-fix: backlog
+  8-12-registration-ux-refactor: backlog
+  8-13-login-ux-enhancement: backlog
+  8-14-global-theme-system: backlog
+  epic-8-retrospective: optional
+
+  # Epic 9: 数据云端同步
+  epic-9: done
+  9-1-supabase-db-migration-rls: done
+  9-2-realtime-subscription-zustand: done
+  9-3-offline-sync-conflict-resolution: done
+  9-4-data-export: done
+  9-5-account-deletion: done
+  epic-9-retrospective: done
+
+  # Epic 10: BYOK 与付费订阅
+  epic-10: backlog
+  10-1-onboarding-ai-mode-selection: backlog
+  10-2-daily-free-limit: backlog
+  10-3-byok-config-management: backlog
+  10-4-paywall-ui-benefits-comparison: backlog
+  10-5-payment-subscription-management: backlog
+  10-6-crisis-word-detection-guidance: backlog
+  epic-10-retrospective: optional
+
+  # Epic 11: 多平台覆盖
+  epic-11: backlog
+  11-1-monorepo-migration: backlog
+  11-2-taro-miniapp-init: backlog
+  11-3-wechat-oauth-login: backlog
+  epic-11-retrospective: optional
+
+  # Epic 12: 成本与行为监控
+  epic-12: backlog
+  12-1-user-behavior-tracking: backlog
+  12-2-ai-cost-dashboard: backlog
+  12-3-ai-daily-limit-intercept: backlog
+  12-4-aggregated-view-analysis: backlog
+  epic-12-retrospective: optional
+
+  # Epic 13: 部署与运维
+  epic-13: done
+  13-1-cicd-pipeline: done
+  13-2-error-monitoring: done
+  13-3-smtp-email-service: done
+  13-4-transactional-email-system: done
+  13-5-domain-ssl-config: done
+  13-6-database-backup-strategy: done
+  13-7-vercel-three-env-config: done
+  13-8-preview-deployment-verification: done
+  epic-13-retrospective: done
+
+  # Epic 14: 支付基础设施
+  epic-14: backlog
+  14-1-payment-channel-integration: backlog
+  14-2-pricing-page: backlog
+  14-3-paywall-usage-state-machine: backlog
+  14-4-admin-data-dashboard: backlog
+  epic-14-retrospective: optional
+
+  # Epic 15: 开发体验治理
+  epic-15: backlog
+  15-1-automated-testing-framework: backlog
+  15-2-pre-commit-hooks: backlog
+  15-3-code-standards-config: backlog
+  15-4-github-actions-ci: backlog
+  epic-15-retrospective: optional
+
+  # Epic 16: UX 治理
+  epic-16: backlog
+  16-1-design-token-governance: backlog
+  16-2-empty-state-component-upgrade: backlog
+  16-3-onboarding-guide-flow: backlog
+  16-4-feedback-component-unification: backlog
+  16-5-component-doc-system: backlog
+  epic-16-retrospective: optional
