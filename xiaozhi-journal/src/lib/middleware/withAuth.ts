@@ -20,23 +20,44 @@ export interface AuthResult {
  *   if (!user) {
  *     return NextResponse.json({ error: '请先登录' }, { status: 401 })
  *   }
- *   // Use response (has refreshed cookies) or merge cookies into your response
+ *   // Use createJsonResponseWithCookies to merge refreshed cookies
  */
 export async function withAuth(request: NextRequest): Promise<AuthResult> {
   const response = NextResponse.next()
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // Missing config — return null user (route handler will return 401)
+    // Create a dummy supabase client for type consistency
+    const emptySupabase = createServerClient(
+      'https://placeholder.supabase.co',
+      'placeholder-key',
+      { cookies: { getAll: () => [], setAll: () => {} } }
+    ) as ReturnType<typeof createServerClient>
+    return { user: null, supabase: emptySupabase, response }
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers) {
           // Write refreshed cookies to response (token refresh requires this)
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )
+          // Apply cache-control headers from Supabase SSR (prevent auth response caching)
+          if (headers) {
+            Object.entries(headers).forEach(([key, value]) =>
+              response.headers.set(key, value)
+            )
+          }
         },
       },
     }
@@ -58,8 +79,22 @@ export function createJsonResponseWithCookies(
 ): NextResponse {
   const response = NextResponse.json(data, init)
   if (sourceResponse) {
+    // Copy cookies with their full options (not just name/value)
     sourceResponse.cookies.getAll().forEach(cookie => {
-      response.cookies.set(cookie.name, cookie.value, cookie)
+      // cookie object has name, value, and other properties like path, expires, etc.
+      // We need to pass all options, not just the cookie object itself
+      response.cookies.set(cookie.name, cookie.value, {
+        path: cookie.path,
+        expires: cookie.expires,
+        maxAge: cookie.maxAge,
+        secure: cookie.secure,
+        httpOnly: cookie.httpOnly,
+        sameSite: cookie.sameSite,
+      })
+    })
+    // Copy headers (cache-control etc.)
+    sourceResponse.headers.forEach((value, name) => {
+      response.headers.set(name, value)
     })
   }
   return response

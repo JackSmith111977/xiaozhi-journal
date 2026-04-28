@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { StateCreator } from 'zustand';
-import { getJournals, getJournalById, addJournal as dbAdd, updateJournal as dbUpdate, syncToSupabase } from '@/lib/db';
+import { getJournals, getJournalById, addJournal as dbAdd, updateJournal as dbUpdate, syncToSupabase, setUserId, clearAllData as clearDbData } from '@/lib/db';
 import { subscribeJournals, unsubscribeJournals } from '@/lib/realtime';
 import { supabase } from '@/lib/supabase/client';
 import type { Journal, AIResponse } from '@/types';
@@ -274,6 +274,7 @@ export function initializeAuth() {
 
   const sessionPromise = supabase.auth.getSession();
   const timeoutId = setTimeout(() => {
+    setUserId(null);
     store.setUser(null);
     store.setAuthLoading(false);
   }, 5000);
@@ -284,6 +285,7 @@ export function initializeAuth() {
     store.setUser(session?.user ?? null);
     store.setAuthLoading(false);
     if (isAuthenticated) {
+      setUserId(session!.user.id);
       useAppStore.getState().startRealtimeSubscription();
       useAppStore.getState().initOfflineSync();
     }
@@ -300,6 +302,7 @@ export function initializeAuth() {
       useAppStore.getState().setAuthLoading(false);
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (isAuthenticated) {
+          setUserId(session!.user.id);
           useAppStore.getState().startRealtimeSubscription();
           useAppStore.getState().initOfflineSync();
         }
@@ -307,6 +310,8 @@ export function initializeAuth() {
         useAppStore.getState().stopRealtimeSubscription();
         useAppStore.getState().stopOfflineSync();
         useAppStore.getState().clearAllData();
+        clearDbData();
+        setUserId(null);
         initialized = false;
       }
     });

@@ -67,7 +67,15 @@ export async function POST(request: NextRequest) {
   Sentry.setUser({ id: user.id, email: user.email ?? undefined })
 
   try {
-    const body = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: '请求体格式无效', valid: false },
+        { status: 400 }
+      )
+    }
     const { apiKey } = body
 
     if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
@@ -93,7 +101,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         valid: false,
         error: 'API Key 无效，请检查',
-      })
+      }, { status: 400 })
     }
 
     // 加密存储
@@ -117,11 +125,11 @@ export async function POST(request: NextRequest) {
     if (upsertError) {
       console.error('[BYOK API] Upsert error:', upsertError)
       Sentry.captureException(upsertError)
-      return NextResponse.json({
+      return createJsonResponseWithCookies({
         valid: true,
         saved: false,
         error: 'Key 有效但保存失败，请稍后重试',
-      })
+      }, { status: 500 }, authResponse)
     }
 
     return createJsonResponseWithCookies(
@@ -136,10 +144,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[BYOK API] Error saving key:', error)
     Sentry.captureException(error)
-    return NextResponse.json({
+    return createJsonResponseWithCookies({
       valid: false,
       error: '验证失败，请稍后重试',
-    })
+    }, { status: 500 }, authResponse)
   }
 }
 
@@ -166,18 +174,18 @@ export async function DELETE(request: NextRequest) {
     if (updateError) {
       console.error('[BYOK API] Delete error:', updateError)
       Sentry.captureException(updateError)
-      return NextResponse.json({
+      return createJsonResponseWithCookies({
         deleted: false,
         error: '删除失败，请稍后重试',
-      })
+      }, { status: 500 }, authResponse)
     }
 
     // 检查是否有实际更新
     if (!data || data.length === 0) {
-      return NextResponse.json({
+      return createJsonResponseWithCookies({
         deleted: false,
         error: '没有找到需要删除的 Key',
-      })
+      }, { status: 404 }, authResponse)
     }
 
     return createJsonResponseWithCookies(
@@ -191,9 +199,9 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('[BYOK API] Error deleting key:', error)
     Sentry.captureException(error)
-    return NextResponse.json({
+    return createJsonResponseWithCookies({
       deleted: false,
       error: '删除失败，请稍后重试',
-    })
+    }, { status: 500 }, authResponse)
   }
 }

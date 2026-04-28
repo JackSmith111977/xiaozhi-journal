@@ -28,9 +28,17 @@ export async function DELETE(request: NextRequest) {
 
   const cookieStore = await cookies()
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl) {
+    return NextResponse.json(
+      { error: '服务端配置缺失，请联系管理员' },
+      { status: 500 }
+    )
+  }
+
   // Create admin client with service role (separate from withAuth client)
   const adminClient = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     serviceRoleKey,
     {
       cookies: {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, createJsonResponseWithCookies } from '@/lib/middleware/withAuth'
 
 /**
- * 邵件发送 API Route Handler
+ * 邮件发送 API Route Handler
  *
  * 处理事务邮件发送请求：
  * - 本地开发：记录邮件到日志（模拟发送）
@@ -16,7 +16,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: '请求体格式无效' },
+        { status: 400 }
+      )
+    }
     const { to, subject, template, templatePath, data } = body
 
     // 过滤邮件主题中的换行符，防止 SMTP 头注入
@@ -94,10 +102,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (!response.ok) {
-      const error = await response.text()
-      console.error('Edge Function 邵件发送失败:', error)
+      const errorText = await response.text()
+      console.error('Edge Function 邮件发送失败:', errorText)
       return NextResponse.json(
-        { error: '邮件发送失败', details: error },
+        { error: '邮件发送失败' },
         { status: 500 }
       )
     }
@@ -114,9 +122,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('邮件发送 API 错误:', error)
-    return NextResponse.json(
+    return createJsonResponseWithCookies(
       { error: '邮件发送失败，请稍后重试' },
-      { status: 500 }
+      { status: 500 },
+      authResponse
     )
   }
 }

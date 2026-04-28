@@ -16,7 +16,15 @@ export async function POST(request: NextRequest) {
   let journalId: string | undefined
 
   try {
-    const body = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: '请求体格式无效' },
+        { status: 400 }
+      )
+    }
     const { id, content, mood, useByok } = body
     journalId = id
 
@@ -32,7 +40,7 @@ export async function POST(request: NextRequest) {
       (useByok !== undefined && typeof useByok !== 'boolean')
     ) {
       return NextResponse.json(
-        { message: '缺少必填字段: id, content, mood' },
+        { error: '缺少必填字段: id, content, mood' },
         { status: 400 }
       )
     }
@@ -117,12 +125,16 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[API Route] Error:', error)
     Sentry.captureException(error)
-    return NextResponse.json({
-      id: journalId ?? '',
-      response: '小知暂时不在，但你的感受已经保存好了。稍后再来看看想对你说什么吧~',
-      goldenQuote: '每一段难熬的时光，都是生活在给你放假。',
-      moodLabel: '本地',
-      fromFallback: true,
-    })
+    return createJsonResponseWithCookies(
+      {
+        id: journalId ?? '',
+        response: '小知暂时不在，但你的感受已经保存好了。稍后再来看看想对你说什么吧~',
+        goldenQuote: '每一段难熬的时光，都是生活在给你放假。',
+        moodLabel: '本地',
+        fromFallback: true,
+      },
+      { status: 500 },
+      authResponse
+    )
   }
 }

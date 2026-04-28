@@ -90,14 +90,17 @@
 - **templatePath 冗余传递** — 当前三层传递但 Edge Function 仅用于日志，清理性改进非阻塞
 - **邮箱正则不过度收紧** — 当前 `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` 满足基本验证，收紧非 MVP 要求
 
-## Deferred from: code review of 8-6-password-policy (2026-04-27)
+## Deferred from: code review of 8-8-indexeddb-user-isolation.md (2026-04-28)
 
-- **No Max Password Length** — Supabase 默认限制，非本 Story 范围
-- **Unicode/Emoji Password Handling** — JS length 计 UTF-16 code units，非用户预期 grapheme clusters
-- **AuthGuard Redirect Race** — callback 页 AuthGuard 与 getUser 竞态，已有逻辑处理
-- **aria-describedby Missing** — PasswordStrength 有 role="status" 但无 aria-describedby 链接到 input
-- **Browser Autofill Bypass** — React 状态更新时序，autofill 后立即 Enter 可能 state 未更新
-- **Mobile Keyboard Submission** — canSubmit 已阻止无效提交
-- **updatePassword Session Invalidation** — Supabase session 管理策略
-- **Very Long Password Performance** — regex .test() O(n)，极端场景性能优化
-- **redirectTimerRef Stale Closure** — React 18+ forgiving，unmount 后 setTimeout router.push 可能副作用
+- **用户切换场景未处理** — 用户 B 登录同一设备时，未清理用户 A 数据。违反 AC3 第二部分（存储清理）。MVP 阶段多用户共享设备场景罕见，prefix 隔离已满足功能正确性，存储膨胀非阻塞问题，等实际需求再改
+- **getPendingJournals() 性能退化** — 从 index query `getAll('pending')` 改为 `getJournals()` + `filter()`，遍历全部而非命中 pending entries。性能问题非功能缺陷，数据量小暂不影响
+- **syncToSupabase() stub 冗余** — 循环内每次 `await getDB()`，应提取到循环外。stub 实现，Epic 9 重写
+- **DB 升级旧数据丢失** — `oldVersion < 2` 直接 `deleteObjectStore`，无迁移路径。单用户历史数据不重要，清理可接受
+
+## Deferred from: code review of 8-7-api-auth-middleware.md (2026-04-28)
+
+- **email send no rate limiting** — Epic 10 feature, out of current story scope
+- **account delete no confirmation** — Security design deferred to future story, irreversible data loss risk acknowledged
+- **sync route stub returns 200** — Epic 9 implementation placeholder, intentional stub design
+- **ai/usage stub hardcoded** — Epic 10 implementation placeholder, frontend relies on stub data
+- **proxy uses getSession()** — Architectural design per story Dev Notes, "optimistic check" + full JWT verification in route handler. Race condition acknowledged but handled by route handler getUser()

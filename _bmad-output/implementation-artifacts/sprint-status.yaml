@@ -76,8 +76,8 @@ development_status:
   8-4-profile-management: done
   8-5-email-confirmation: done
   8-6-password-policy-unification: done
-  8-7-api-auth-middleware: review
-  8-8-indexeddb-user-isolation: backlog
+  8-7-api-auth-middleware: done
+  8-8-indexeddb-user-isolation: done
   8-9-audit-log-tables: backlog
   8-10-profiles-table-extension: backlog
   8-11-auth-init-race-fix: backlog
