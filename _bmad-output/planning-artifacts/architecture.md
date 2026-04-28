@@ -1,11 +1,12 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 'auth-security-update']
 inputDocuments:
   - 'prd.md'
   - 'ux-design-specification.md'
   - 'epics.md'
   - 'sprint-change-proposal-2026-04-21.md'
   - 'correct-course-change-proposal'
+  - 'sprint-change-proposal-2026-04-27-auth-security.md'
 workflowType: 'architecture'
 project_name: 'Xiaozhi Journal'
 user_name: 'Kei'
@@ -14,6 +15,7 @@ classification: ''
 lastStep: 8
 status: 'complete'
 completedAt: '2026-04-21'
+lastEdited: '2026-04-27'
 ---
 
 # Architecture Decision Document (UX Updated)
@@ -191,19 +193,163 @@ pnpm create turbo@latest xiaozhi-journal-monorepo
 
 ### Authentication & Security
 
-**认证方式：** Supabase Auth（邮箱/密码，Phase 1）+ 微信 OAuth（Phase 3）
+#### 认证方式
 
-**API Key 存储：** 用户 BYOK Key 使用应用层 AES-256-GCM 加密存储于 `user_api_keys` 表，不依赖 Supabase Vault。
+**Phase 1:** Supabase Auth（邮箱/密码）
+**Phase 3:** 微信 OAuth（小程序原生 + Web OAuth）
 
-**平台 AI Key：** 通过服务端 Route Handler 代理调用，不暴露到客户端（现有模式延续）。
+#### 邮箱确认策略
 
-**密码哈希：** Supabase Auth 内置 bcrypt，不需要自定义实现。
+**强制邮箱确认：** 用户注册后必须验证邮箱才能登录。
 
-**行级安全（RLS）：** 每个用户只能访问自己的数据，通过 Supabase RLS 策略实现：
+**双模式确认：**
+| 模式 | 说明 | 实现 |
+|------|------|------|
+| 链接确认 | 发送确认链接，点击即验证 | Supabase 默认 |
+| 验证码确认 | 发送 6 位数字验证码，用户输入验证 | 自定义 OTP |
+
+**有效期：** 验证码/确认链接有效期 10 分钟，过期需重新申请。
+
+**未验证账户清理：** 7 天后自动清理未验证邮箱的账户。
+
+#### 密码策略
+
+| 规则 | 要求 | 验证位置 |
+|------|------|---------|
+| 长度 | ≥ 8 位 | 前端 + 后端 |
+| 复杂度 | 包含大小写字母和数字 | 前端 + 后端 |
+| 一致性 | 前后端策略一致 | Supabase 配置 + 注册表单 |
+
+**重置密码：**
+- 验证链接有效期 1 小时
+- 修改密码需重新认证（secure_password_change = true）
+
+#### 暴力破解防护
+
+**速率限制：**
+| 参数 | 值 |
+|------|-----|
+| 登录尝试窗口 | 5 分钟 |
+| 最大尝试次数 | 10 次 |
+| 超限处理 | 需验证码 |
+
+**可选增强：** Cloudflare Turnstile CAPTCHA（Phase 4）
+
+#### Session 管理
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| JWT 过期时间 | 1 小时 | Access token |
+| Refresh token | 自动轮换 | Supabase 内置 |
+| Session 超时 | 7 天不活动 | 自动登出 |
+| 最大生命周期 | 30 天 | 强制重新登录 |
+
+#### API Key 存储
+
+**用户 BYOK Key：** 应用层 AES-256-GCM 加密存储于 `user_api_keys` 表。
+
+**加密参数：**
+| 参数 | 值 |
+|------|-----|
+| 算法 | AES-256-GCM |
+| 密钥派生 | scrypt（N=2^14, r=8, p=1）|
+| Salt | 随机生成，与加密数据分离存储 |
+
+**平台 AI Key：** 服务端 Route Handler 代理调用，不暴露客户端。
+
+#### 密码哈希
+
+**算法：** bcrypt（Supabase Auth 内置）
+
+| 参数 | 值 |
+|------|-----|
+| 成本因子 | ≥ 10 |
+
+#### 行级安全（RLS）
+
+**策略原则：** 用户只能访问自己的数据。
+
 ```sql
+-- journals 表 RLS
 CREATE POLICY "Users can only access their own journals"
 ON journals FOR ALL
 USING (auth.uid() = user_id);
+
+-- 所有业务表启用 RLS
+ALTER TABLE journals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_usage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_api_keys ENABLE ROW LEVEL SECURITY;
+```
+
+#### IndexedDB 数据隔离
+
+**隔离策略：**
+| 约定 | 说明 |
+|------|------|
+| 数据前缀 | 每个用户的 IndexedDB 数据使用 `{user_id}_` 前缀 |
+| 退出清理 | 用户退出登录时清空 IndexedDB |
+
+**实现：**
+```ts
+// lib/db.ts 修改
+const getUserPrefix = (userId: string) => `${userId}_`;
+
+// journals store key: {userId}_journal_{id}
+// appMeta store key: {userId}_meta_{key}
+```
+
+#### 审计日志
+
+**login_logs 表：**
+```sql
+CREATE TABLE login_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  login_time timestamptz NOT NULL DEFAULT now(),
+  ip_address text,
+  device_info text,
+  login_method text CHECK (login_method IN ('email', 'wechat'))
+);
+
+CREATE INDEX idx_login_logs_user_id ON login_logs(user_id);
+CREATE INDEX idx_login_logs_time ON login_logs(login_time DESC);
+
+ALTER TABLE login_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own login logs"
+  ON login_logs FOR SELECT USING (auth.uid() = user_id);
+```
+
+**security_events 表：**
+```sql
+CREATE TABLE security_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  event_type text NOT NULL CHECK (event_type IN (
+    'password_change', 'email_change', 'api_key_add', 'api_key_delete'
+  )),
+  event_time timestamptz NOT NULL DEFAULT now(),
+  ip_address text,
+  details jsonb DEFAULT '{}'
+);
+
+CREATE INDEX idx_security_events_user_id ON security_events(user_id);
+CREATE INDEX idx_security_events_time ON security_events(event_time DESC);
+
+ALTER TABLE security_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own security events"
+  ON security_events FOR SELECT USING (auth.uid() = user_id);
+```
+
+#### profiles 表扩展
+
+**新增字段：**
+```sql
+ALTER TABLE profiles ADD COLUMN login_count int DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN last_login timestamptz;
+ALTER TABLE profiles ADD COLUMN status text DEFAULT 'active'
+  CHECK (status IN ('active', 'suspended', 'deleted'));
 ```
 
 ### API & Communication Patterns
@@ -828,7 +974,7 @@ ALTER TABLE subscriptions ADD COLUMN auto_renew boolean DEFAULT false;
 
 **Areas for Future Enhancement:**
 - 支付 Webhook 安全验证（Phase 2）
-- 自定义域名国内可达性方案（Epic 13 Story 13.5）
+- ✅ 自定义域名国内可达性方案 — **已解决**：Cloudflare Proxy + `xiaozhi-journal.keidesu.top`（2026-04-26）
 - 限流中间件（Epic 14 Story 14.3）
 - 安全扫描自动化（Epic 15 Story 15.4）
 

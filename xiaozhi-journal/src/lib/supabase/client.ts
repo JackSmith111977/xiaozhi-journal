@@ -1,21 +1,12 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+  throw new Error(
+    'Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+  );
 }
 
-/**
- * Singleton Supabase browser client for Client Components.
- * All callers share the same instance — no per-render instantiation.
- */
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
-
-/**
- * Factory function — use when you need a fresh instance (e.g. tests).
- */
-export function createClient() {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey)
-}
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);

@@ -89,3 +89,15 @@
 - **验证逻辑三层重复** — email regex + field validation 在 API Route 与 Edge Function 重复，安全行为期望冗余验证
 - **templatePath 冗余传递** — 当前三层传递但 Edge Function 仅用于日志，清理性改进非阻塞
 - **邮箱正则不过度收紧** — 当前 `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` 满足基本验证，收紧非 MVP 要求
+
+## Deferred from: code review of 8-6-password-policy (2026-04-27)
+
+- **No Max Password Length** — Supabase 默认限制，非本 Story 范围
+- **Unicode/Emoji Password Handling** — JS length 计 UTF-16 code units，非用户预期 grapheme clusters
+- **AuthGuard Redirect Race** — callback 页 AuthGuard 与 getUser 竞态，已有逻辑处理
+- **aria-describedby Missing** — PasswordStrength 有 role="status" 但无 aria-describedby 链接到 input
+- **Browser Autofill Bypass** — React 状态更新时序，autofill 后立即 Enter 可能 state 未更新
+- **Mobile Keyboard Submission** — canSubmit 已阻止无效提交
+- **updatePassword Session Invalidation** — Supabase session 管理策略
+- **Very Long Password Performance** — regex .test() O(n)，极端场景性能优化
+- **redirectTimerRef Stale Closure** — React 18+ forgiving，unmount 后 setTimeout router.push 可能副作用

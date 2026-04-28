@@ -31,6 +31,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
 | **Error Monitoring** | @sentry/nextjs | ^10.49.0 | Error tracking, user context, performance monitoring |
 | **Package Manager** | pnpm | 9.15.3 | `packageManager` 字段强制 pnpm，`packageManagerStrictVersion=false` 不阻塞版本偏差 |
 | **Deployment** | Vercel | - | Production/Preview/Development 三环境自动映射 |
+| **DNS/Proxy** | Cloudflare | - | 自定义域名代理，SSL Full (Strict)，DNS Only 模式可选 |
+| **Production URL** | https://xiaozhi-journal.keidesu.top | - | 黑客松版本已上线，main 分支自动部署 |
 | **Data** | idb | ^8.0.3 | IndexedDB wrapper, async promise-based API |
 | **Utilities** | clsx | ^2.1.1 | Conditional class names |
 | | tailwind-merge | ^3.5.0 | Merge Tailwind classes |
@@ -42,6 +44,48 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - `next.config.ts` — images.remotePatterns for QR code API
 - `tsconfig.json` — strict: true, jsx: react-jsx, paths: `@/*` → `./src/*`
 - `globals.css` — Tailwind v4 `@theme` + CSS custom properties for "暖日" color palette
+
+---
+
+## Deployment Configuration
+
+### 当前部署状态
+
+| 环境 | 分支 | 域名 | 状态 |
+|------|------|------|------|
+| Production | `main` | https://xiaozhi-journal.keidesu.top | 已上线（黑客松版本）|
+| Preview | `master` | `*.vercel.app` | 开发环境 |
+| Development | 本地 | `localhost:3000` | 本地开发 |
+
+### 域名架构
+
+```
+用户请求 → Cloudflare DNS → Cloudflare Proxy → Vercel Edge → Next.js App
+```
+
+**关键配置：**
+- **域名**: `xiaozhi-journal.keidesu.top`
+- **DNS 托管**: Cloudflare
+- **SSL 模式**: Full (Strict) — Cloudflare 到 Vercel 也需 HTTPS
+- **Proxy 状态**: Proxied（橙色云图标）— 启用 Cloudflare CDN
+
+### Cloudflare 配置要点
+
+| 设置 | 值 | 说明 |
+|------|------|------|
+| DNS Record | CNAME `xiaozhi-journal` → Vercel 项目域名 | Proxied 模式 |
+| SSL/TLS | Full (Strict) | 端到端加密，需 Vercel SSL 有效 |
+| Always Use HTTPS | On | HTTP 自动跳转 |
+| Auto Minify | 可选 | HTML/CSS/JS 压缩 |
+| Brotli | On | 压缩优化 |
+
+### Vercel 配置要点
+
+| 设置 | 值 | 说明 |
+|------|------|------|
+| Production Branch | `main` | 自动部署到生产 |
+| Framework | Next.js | 自动识别 |
+| Build Command | `pnpm build` | 自动生成 |
 
 ---
 

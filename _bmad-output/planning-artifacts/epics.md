@@ -5,6 +5,7 @@ inputDocuments:
   - 'architecture.md'
   - 'ux-design-specification.md'
   - 'sprint-change-proposal-2026-04-21.md'
+  - 'sprint-change-proposal-2026-04-27-auth-security.md'
 ---
 
 # Xiaozhi Journal - Epic Breakdown
@@ -527,6 +528,298 @@ So that 我能个性化自己的账号。
 **When** Supabase 请求失败
 **Then** 显示中文错误提示："保存失败，请稍后重试"
 **And** 输入框内容回退到修改前的值
+
+---
+
+### Story 8.5: 邮箱确认策略实现
+
+> **来源**: SCP-2026-04-27-auth | **优先级**: P0 | **FR**: FR1.1, FR1.2
+
+As a 新用户,
+I want 注册后必须验证邮箱才能登录,
+So that 系统确保每个账号背后是真实的邮箱所有者。
+
+**Acceptance Criteria:**
+
+**Given** Supabase Auth 配置
+**When** 启用邮箱确认
+**Then** 在 Supabase Dashboard → Auth → Providers → Email 中开启 `Confirm email`
+**And** 注册后用户状态为 `unconfirmed`，无法登录
+**And** 用户收到确认邮件（链接模式 或 OTP 模式）
+
+**Given** 用户收到确认邮件
+**When** 点击确认链接或输入 6 位验证码
+**Then** 邮箱验证成功，用户状态变为 `confirmed`
+**And** 自动登录并跳转到资料设置页（昵称/头像，可跳过）
+**And** 验证 token 有效期 10 分钟，过期需重新申请
+
+**Given** 用户注册后未验证邮箱
+**When** 7 天未验证
+**Then** 系统自动清理未验证账户（Supabase pg_cron 或手动清理脚本）
+**And** 清理后该邮箱可重新注册
+
+**给定** 用户尝试登录但未验证邮箱
+**When** 输入正确的邮箱密码
+**Then** 提示："请先验证你的邮箱，检查收件箱或重新发送验证邮件"
+**And** 提供"重新发送验证邮件"按钮
+
+---
+
+### Story 8.6: 密码策略统一（前后端一致）
+
+> **来源**: SCP-2026-04-27-auth | **优先级**: P0 | **FR**: FR1.4, FR1.5, FR1.6
+
+As a 用户,
+I want 密码创建时就知道规则,
+So that 我不会在提交后才发现密码不符合要求。
+
+**Acceptance Criteria:**
+
+**Given** 注册/重置密码页面
+**When** 用户输入密码
+**Then** 前端实时校验：≥ 8 位、包含大小写字母和数字
+**And** 密码强度指示器实时显示（弱/中/强，5 段条状）
+**And** 弱：`< 8 位` → `#D4856A` "再加几位吧~"
+**And** 中：`≥ 8 位，部分复杂度` → `#B5ADA9` "还不错，加点复杂度？"
+**And** 强：`≥ 8 位 + 大小写 + 数字` → `#A8C5A0` "这就很安全了 ✨"
+
+**Given** 用户提交注册表单
+**When** 密码不符合策略
+**Then** 前端阻止提交，显示具体错误提示
+**And** 不发起 API 请求
+
+**Given** Supabase Auth 配置
+**When** 配置密码策略
+**Then** 在 Supabase Dashboard → Auth → Policies 中开启密码强度检查
+**And** 后端策略与前端一致（≥ 8 位 + 复杂度）
+**And** 前后端校验结果一致
+
+**Given** 用户重置密码
+**When** 输入新密码
+**Then** 遵循同样的密码策略校验
+**And** 重置链接有效期 1 小时（`secure_password_change = true`）
+
+---
+
+### Story 8.7: API 认证中间件统一
+
+> **来源**: SCP-2026-04-27-auth | **优先级**: P0 | **NFR**: NFR6, NFR8
+
+As a 开发者,
+I want 所有 API 路由都经过统一的认证检查,
+So that 没有未授权的用户能访问受保护的数据。
+
+**Acceptance Criteria:**
+
+**Given** 现有 `middleware.ts`
+**When** 检查路由鉴权
+**Then** 所有 `/api/journal*` 路由要求用户已登录
+**And** 所有 `/api/ai/*` 路由要求用户已登录
+**And** 所有 `/api/sync` 路由要求用户已登录
+**And** 未认证请求返回 401 + `{ error: "请先登录" }`
+
+**Given** 白名单路由
+**When** 检查无需认证的路由
+**Then** `/api/auth/*` 可公开访问
+**And** `/api/health` 可公开访问（如果存在）
+**And** 白名单中无遗漏的敏感路由
+
+**Given** API 路由处理请求
+**When** 从 request 中获取用户身份
+**Then** 使用 `supabase.auth.getUser()` 验证 JWT
+**And** 不使用 `supabase.auth.getSession()`（避免竞态条件）
+**And** 验证失败时返回 401
+
+---
+
+### Story 8.8: IndexedDB 用户数据隔离
+
+> **来源**: SCP-2026-04-27-auth | **优先级**: P0 | **NFR**: NFR10
+
+As a 多用户共享设备的用户,
+I want 我的数据不会被其他用户看到,
+So that 我的隐私得到保护。
+
+**Acceptance Criteria:**
+
+**Given** `lib/db.ts`
+**When** 重构 IndexedDB 存储
+**Then** 所有存储 key 使用 `{user_id}_` 前缀
+**And** journals store key 格式：`{userId}_journal_{id}`
+**And** appMeta store key 格式：`{userId}_meta_{key}`
+
+**Given** 用户退出登录
+**When** 调用登出逻辑
+**Then** 清空当前用户的所有 IndexedDB 数据
+**And** 不残留任何上一用户的数据
+**And** Zustand store 重置
+
+**Given** 用户 A 登录后写入数据
+**When** 用户 B 登录同一设备
+**Then** 用户 B 看不到用户 A 的任何数据
+**And** IndexedDB 中用户 A 的数据已被清理
+
+---
+
+### Story 8.9: 审计日志表创建
+
+> **来源**: SCP-2026-04-27-auth | **优先级**: P1 | **FR**: FR4.1, FR4.2
+
+As a 用户,
+I want 查看自己的登录历史和安全事件,
+So that 我能监控账号安全。
+
+**Acceptance Criteria:**
+
+**Given** Supabase 迁移脚本
+**When** 创建 `login_logs` 表
+**Then** 包含字段：id, user_id, login_time, ip_address, device_info, login_method
+**And** RLS 策略：用户只能查看自己的登录日志
+**And** 索引：`idx_login_logs_user_id`, `idx_login_logs_time`
+
+**When** 创建 `security_events` 表
+**Then** 包含字段：id, user_id, event_type, event_time, ip_address, details
+**And** event_type 枚举：password_change, email_change, api_key_add, api_key_delete
+**And** RLS 策略：用户只能查看自己的安全事件
+**And** 索引：`idx_security_events_user_id`, `idx_security_events_time`
+
+**Given** 用户登录成功
+**When** 写入登录日志
+**Then** 记录时间、IP、设备信息、登录方式
+**And** 写入失败不阻塞登录流程
+
+---
+
+### Story 8.10: profiles 表扩展
+
+> **来源**: SCP-2026-04-27-auth | **优先级**: P1
+
+As a 开发者,
+I want profiles 表包含账号状态和登录统计字段,
+So that 系统能追踪用户活跃度和账号状态。
+
+**Acceptance Criteria:**
+
+**Given** Supabase 迁移脚本
+**When** 扩展 profiles 表
+**Then** 新增 `login_count int DEFAULT 0`
+**And** 新增 `last_login timestamptz`
+**And** 新增 `status text DEFAULT 'active'` CHECK (active, suspended, deleted)
+
+**Given** 用户登录成功
+**When** 更新登录统计
+**Then** `login_count` +1
+**And** `last_login` 更新为当前时间
+**And** 更新失败不阻塞登录
+
+---
+
+### Story 8.11: initializeAuth 竞态修复
+
+> **来源**: SCP-2026-04-27-auth | **优先级**: P1
+
+As a 用户,
+I want 页面刷新后登录状态正确恢复,
+So that 我不需要反复登录。
+
+**Acceptance Criteria:**
+
+**Given** 现有 `initializeAuth` 逻辑
+**When** 修复竞态条件
+**Then** 移除 `getSession()` 调用链中的 5 秒超时
+**And** 改用 `supabase.auth.onAuthStateChange` 监听
+**And** 初始加载状态使用 `loading: true`，等待首次 auth 事件后确定状态
+
+**Given** 页面刷新
+**When** 用户已登录
+**Then** 在 1 秒内恢复登录状态
+**And** 不出现闪烁的登录页
+
+---
+
+### Story 8.12: 注册流程 UX 重构（分步向导 + 资料设置）
+
+> **来源**: UX 设计规格 | **优先级**: P1 | **UX-DR**: UX-DR16, UX-DR18
+
+As a 新用户,
+I want 注册流程分步骤引导我完成,
+So that 我不会被一堆表单吓到。
+
+**Acceptance Criteria:**
+
+**Given** 注册流程
+**When** 重构为分步向导
+**Then** Step 1: 输入邮箱（格式实时校验）
+**And** Step 2: 设置密码 + 确认密码 + 年龄确认（密码强度实时显示）
+**And** Step 3: 选择邮箱验证方式（链接 / OTP）
+**And** Step 4: 邮箱验证后 → 设置昵称 + 头像（可"以后再说"跳过）
+**And** 每步有进度条指示（已完成柔绿 / 当前暖橙 / 未到达浅灰）
+**And** 可点击"上一步"回退修改
+
+**Given** 用户完成邮箱验证
+**When** 进入资料设置页
+**Then** 显示 6 个预设 emoji 头像供选择
+**And** 昵称输入框（1-20 字符）
+**And** "以后再说"按钮（次要样式）+ "开始写日记 ✨"按钮（主要样式，昵称填写后可点击）
+**And** 跳过时显示提示："已跳过，以后可以在设置里修改~"
+
+---
+
+### Story 8.13: 登录流程 UX 增强（找回密码 + 保持登录）
+
+> **来源**: UX 设计规格 | **优先级**: P1 | **UX-DR**: UX-DR16
+
+As a 用户,
+I want 登录页面有找回密码入口和保持登录选项,
+So that 我能灵活管理登录体验。
+
+**Acceptance Criteria:**
+
+**Given** 登录页面
+**When** 用户查看登录表单
+**Then** 邮箱 + 密码输入框
+**And** "忘记密码？"链接位于密码输入框右下方
+**And** 保持登录时长选择器（4 选项按钮式：不保持 / 24小时 / 7天 / 30天）
+**And** 默认选中 7 天
+
+**Given** 用户点击"忘记密码？"
+**When** 进入找回密码页面
+**Then** 输入注册邮箱 → 发送重置链接 → 确认发送成功
+**And** 发送成功后显示返回登录链接
+
+**Given** 用户选择保持登录时长
+**When** 登录成功
+**Then** Session 过期时间按选择设置
+**And** "不保持" = 浏览器关闭即过期
+
+---
+
+### Story 8.14: 全局主题系统（暖阳/星空自动切换）
+
+> **来源**: UX 设计规格 | **优先级**: P1 | **UX-DR**: UX-DR1~5
+
+As a 用户,
+I want 应用在白天自动使用浅色主题、晚上自动使用深色主题,
+So that 我的眼睛始终舒适。
+
+**Acceptance Criteria:**
+
+**Given** 应用启动
+**When** 检测当前时间
+**Then** 06:00-17:59 → 暖阳主题（浅色: #FDF8F5 背景）
+**And** 18:00-05:59 → 星空主题（深色: #0F1B2D 背景）
+**And** 主题切换无闪烁（在 `layout.tsx` 中注入 `class` 到 `<html>`）
+
+**Given** 主题系统
+**When** 定义设计 Token
+**Then** 页面背景、卡片背景、主文字、弱化文字、主按钮、强调色、成功色、错误色、边框色均有深浅两套
+**And** 使用 CSS 变量 + Tailwind `dark:` 类或自定义 class 切换
+**And** 颜色过渡平滑（无突兀闪烁）
+
+**Given** 设置页
+**When** 用户手动切换主题
+**Then** 覆盖自动切换
+**And** 提供"恢复自动切换"选项
 
 ---
 
