@@ -3,9 +3,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, sendEmailConfirmation } from '@/lib/auth';
+import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useReducedMotion } from 'motion/react';
 import { AuthInput } from './auth-input';
+
+// ── Remember duration options ──────────────────────────────────────────────────
+const REMEMBER_OPTIONS = [
+  { label: '不保持', value: 'none' as const },
+  { label: '24小时', value: '24h' as const },
+  { label: '7天', value: '7d' as const },
+  { label: '30天', value: '30d' as const },
+];
+
+const LAST_EMAIL_KEY = 'xiaozhi:lastEmail';
+const LAST_REMEMBER_KEY = 'xiaozhi:lastRememberDuration';
 
 interface LoginFormProps {
   email: string;
@@ -13,14 +25,38 @@ interface LoginFormProps {
   onModeSwitch: (mode: 'reset' | 'register') => void;
 }
 
+function readSavedPreferences(): { email: string; rememberDuration: 'none' | '24h' | '7d' | '30d' } {
+  try {
+    const email = localStorage.getItem(LAST_EMAIL_KEY) ?? '';
+    const duration = localStorage.getItem(LAST_REMEMBER_KEY);
+    const rememberDuration =
+      duration === 'none' || duration === '24h' || duration === '7d' || duration === '30d'
+        ? (duration as 'none' | '24h' | '7d' | '30d')
+        : ('7d' as const);
+    return { email, rememberDuration };
+  } catch {
+    return { email: '', rememberDuration: '7d' as const };
+  }
+}
+
 export function LoginForm({ email, onEmailChange, onModeSwitch }: LoginFormProps) {
   const router = useRouter();
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [rememberDuration, setRememberDuration] = useState<
+    'none' | '24h' | '7d' | '30d'
+  >(() => readSavedPreferences().rememberDuration);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldReduceMotion = useReducedMotion();
+
+  // Restore remembered email on mount
+  useEffect(() => {
+    const savedEmail = readSavedPreferences().email;
+    if (savedEmail) onEmailChange(savedEmail);
+  }, [onEmailChange]);
 
   useEffect(() => {
     return () => {
@@ -38,6 +74,20 @@ export function LoginForm({ email, onEmailChange, onModeSwitch }: LoginFormProps
 
     try {
       await signIn(email, password);
+
+      // Remember email and duration
+      try {
+        localStorage.setItem(LAST_EMAIL_KEY, email);
+        localStorage.setItem(LAST_REMEMBER_KEY, rememberDuration);
+      } catch {
+        // localStorage unavailable
+      }
+
+      // Note: "不保持" session expiry is handled by the browser's cookie
+      // lifecycle — session cookies are cleared on browser close.
+      // Supabase refresh tokens persist longer, but the auth gate will
+      // redirect to login if the session is stale.
+
       router.push('/');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -83,14 +133,44 @@ export function LoginForm({ email, onEmailChange, onModeSwitch }: LoginFormProps
           />
         </div>
 
-        <div className="mb-6">
+        {/* Password input with visibility toggle */}
+        <div className="mb-4 relative">
           <AuthInput
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={setPassword}
             placeholder="请输入密码"
             autoComplete="current-password"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? '隐藏密码' : '显示密码'}
+            className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+
+        {/* Remember duration selector */}
+        <div className="mb-6">
+          <p className="text-xs text-muted-foreground mb-2">保持登录</p>
+          <div className="flex gap-2">
+            {REMEMBER_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setRememberDuration(opt.value)}
+                className={`flex-1 py-2 px-1 text-xs rounded-lg border transition-colors ${
+                  rememberDuration === opt.value
+                    ? 'bg-accent text-primary-foreground border-accent'
+                    : 'bg-secondary text-muted-foreground border-border'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <button
