@@ -96,7 +96,11 @@
       "Bash(supabase status *)",
       "Bash(start *)",
       "Bash(pnpm lint *)",
-      "Bash(pnpm tsc *)"
+      "Bash(pnpm tsc *)",
+      "Bash(python)",
+      "Bash(python -c \"import json; data = json.loads\\(open\\('_bmad-output/skills/reports/agent-dev-gated/quality-analysis/20260429-000747/report-data.json', encoding='utf-8'\\).read\\(\\)\\); print\\('JSON valid, keys:', len\\(data\\)\\)\")",
+      "Bash(python3 .claude/skills/agent-code-review/scripts/init-sanctum.py \"D:/WorkPlace/VibeCoding/Xiaozhi Journal\" \".claude/skills/agent-code-review\")",
+      "Bash(\"/d/Dev-tools/Python/python\" .claude/skills/agent-code-review/scripts/init-sanctum.py \"D:/WorkPlace/VibeCoding/Xiaozhi Journal\" \".claude/skills/agent-code-review\")"
     ]
   }
 }
