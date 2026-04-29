@@ -33,13 +33,29 @@ failed_layers: '' # set at runtime: comma-separated list of layers that failed o
    - **Edge Case Hunter** — receives `{diff_output}` and read access to the project. Invoke via the `bmad-review-edge-case-hunter` skill.
 
    - **Standards Auditor** (only if `{review_mode}` = `"full"`) — receives `{diff_output}`, the content of the file at `{spec_file}`, and any loaded context docs. Its prompt:
-     > You are an Acceptance Auditor. Review this diff against the spec and context docs. Check for: violations of acceptance criteria, deviations from spec intent, missing implementation of specified behavior, contradictions between spec constraints and actual code. Output findings as a Markdown list. Each finding: one-line title, which AC/constraint it violates, and evidence from the diff.
+     > You are a Standards Auditor. Review this diff against the spec, context docs, and project best practices. Check for: violations of acceptance criteria, deviations from spec intent, missing implementation of specified behavior, contradictions between spec constraints and actual code, violations of tech stack best practices. Output findings as a Markdown list. Each finding: one-line title, which AC/constraint/best-practice it violates, and evidence from the diff.
 
      Additional context loaded:
      - `{project-root}/docs/project-context.md`
      - `{project-root}/CLAUDE.md`
      - `{project-root}/_bmad/memory/agent-code-review/MEMORY.md`
      - `{project-root}/_bmad-output/planning-artifacts/standards-rule-mapping.md`
+     - `{project-root}/_bmad-output/standards/` — all best practice files (`*-best-practices.md`):
+       - `typescript-5-best-practices.md`
+       - `react-19-best-practices.md`
+       - `nextjs-16-best-practices.md`
+       - `supabase-best-practices.md`
+       - `zustand-v5-best-practices.md`
+       - `tailwindcss-v4-standards.md`
+       - `motion-v12-best-practices.md`
+       - `idb-indexeddb-best-practices.md`
+       - `base-ui-react-best-practices.md`
+       - `shadcn-best-practices.md`
+       - `sentry-nextjs-best-practices.md`
+       - `vercel-deployment-environments-best-practices.md`
+       - `pnpm-best-practices.md`
+
+     **Best practices gap reporting**: If the diff touches a technology stack that has no corresponding best practice file in `standards/`, note this in the review report: "No best practice reference found for {tech}. Consider creating one."
 
    - **Security Scanner** (always) — receives `{diff_output}` and project read access. Its prompt:
      > You are a Security Scanner. Review this diff for security vulnerabilities.

@@ -14,7 +14,7 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
 1. **Normalize** findings into a common format. Expected input formats:
    - Adversarial (Blind Hunter): markdown list of descriptions
    - Edge Case Hunter: JSON array with `location`, `trigger_condition`, `guard_snippet`, `potential_consequence` fields
-   - Standards Auditor: markdown list with title, AC/constraint reference, and evidence
+   - Standards Auditor: markdown list with title, AC/constraint/best-practice reference, and evidence
    - Security Scanner: markdown list with title, severity, location, and evidence
 
    If a layer's output does not match its expected format, attempt best-effort parsing. Note any parsing issues for the user.
@@ -26,6 +26,8 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
    - `detail` -- full description
    - `location` -- file and line reference (if available)
    - `severity` -- `Critical`, `High`, `Medium`, `Low` (from subagent output or inferred)
+
+   **Best practices gap reports** (from Standards Auditor): If the Standards Auditor reports that a technology touched by the diff has no corresponding best practice file, classify these as `info` type — they are not code issues but documentation gaps. Report them separately in the summary.
 
 2. **Deduplicate.** If two or more findings describe the same issue, merge them into one:
    - Use the most specific finding as the base (prefer edge-case JSON with location over adversarial prose).

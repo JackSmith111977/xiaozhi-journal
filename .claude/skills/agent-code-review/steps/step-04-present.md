@@ -40,6 +40,13 @@ Announce what was written:
 If `{spec_file}` is set, add: `Findings written to the review findings section in {spec_file}.`
 Otherwise add: `Findings are listed above. No story file was provided, so nothing was persisted.`
 
+**Best practices gap report**: If the Standards Auditor identified technologies touched by the diff that lack corresponding best practice files in `standards/`, report them here:
+
+> **Missing best practices reference:**
+> - {tech}: no `standards/{tech}-best-practices.md` found. Consider creating one.
+
+If no gaps exist, omit this section.
+
 ### 4. Resolve decision-needed findings
 
 If `decision_needed` findings exist, present each one with its detail and the options available. The user must decide — the correct fix is ambiguous without their input. Walk through each finding (or batch related ones) and get the user's call. Once resolved, each becomes a `patch`, `defer`, or is dismissed.

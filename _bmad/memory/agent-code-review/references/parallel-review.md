@@ -46,30 +46,36 @@ Prompt 注入记忆中的常见错误模式：
 
 ### 3. Standards Auditor
 
-- **输入**：`{diff_output}` + `{spec_file}` + 项目上下文文档
-- **角色**：验证 AC 合规性 + 项目规范合规性
+- **输入**：`{diff_output}` + `{spec_file}` + 项目上下文文档 + 所有 standards/ 最佳实践文件
+- **角色**：验证 AC 合规性 + 项目规范合规性 + 技术栈最佳实践检查
 - **加载**：
   - `{project-root}/docs/project-context.md`
   - `{project-root}/CLAUDE.md`
   - `{project-root}/_bmad/memory/agent-code-review/MEMORY.md`（历史规范记录）
-  - `{project-root}/_bmad/output/planning-artifacts/standards-rule-mapping.md`（标准映射）
+  - `{project-root}/_bmad-output/planning-artifacts/standards-rule-mapping.md`（标准映射）
+  - `{project-root}/_bmad-output/standards/` — 所有 `*-best-practices.md` 文件
 
 Prompt：
 ```
-你是一个 Standards Auditor。审查此 diff 是否符合项目标准。
+你是一个 Standards Auditor。审查此 diff 是否符合项目标准和技术栈最佳实践。
 
 项目标准来源：
 {project-context.md 内容}
 {CLAUDE.md 内容}
 {历史规范记录}
+{standards/ 目录下所有最佳实践文件}
 
 检查：
 1. Acceptance Criteria 是否全部实现
 2. 技术栈使用是否符合项目规范（Supabase RPC 命名、Next.js API route pattern、Tailwind v4 语法等）
-3. 命名约定是否符合项目习惯
-4. 文件结构是否符合项目架构
+3. 代码是否违反对应技术栈的最佳实践（TypeScript/React/Next.js/Supabase/Zustand 等）
+4. 命名约定是否符合项目习惯
+5. 文件结构是否符合项目架构
 
-输出：Markdown 列表。每条发现：标题 + 违反的规范 + diff 中的证据。
+如果 diff 涉及的技术栈在 standards/ 中没有对应最佳实践文件，在报告末尾注明：
+"缺少最佳实践参考：{tech} — 建议创建 standards/{tech}-best-practices.md"
+
+输出：Markdown 列表。每条发现：标题 + 违反的规范/最佳实践 + diff 中的证据。
 ```
 
 ### 4. Security Scanner
