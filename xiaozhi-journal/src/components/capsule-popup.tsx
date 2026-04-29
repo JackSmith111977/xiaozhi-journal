@@ -76,12 +76,14 @@ export function CapsulePopup({ journal, title, onClose }: CapsulePopupProps) {
           </div>
           <div className="flex gap-3 justify-end">
             <button
+              type="button"
               onClick={handleClose}
               className="px-4 py-2 text-[#D4856A] hover:bg-[#F5EDE4] rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2"
             >
               稍后再说
             </button>
             <button
+              type="button"
               onClick={handleView}
               className="px-4 py-2 border border-[#D4856A] text-[#D4856A] rounded-lg hover:bg-[#F5EDE4] transition-colors focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2"
             >

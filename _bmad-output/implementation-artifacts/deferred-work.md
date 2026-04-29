@@ -104,3 +104,18 @@
 - **sync route stub returns 200** — Epic 9 implementation placeholder, intentional stub design
 - **ai/usage stub hardcoded** — Epic 10 implementation placeholder, frontend relies on stub data
 - **proxy uses getSession()** — Architectural design per story Dev Notes, "optimistic check" + full JWT verification in route handler. Race condition acknowledged but handled by route handler getUser()
+
+## Deferred from: code review of 8-11-auth-init-race-fix (2026-04-29)
+
+- **未使用变量 `initialized`** — pre-existing，模块级 flag 用于防重复初始化，逻辑正确但命名与 `initialized` 在 SIGNED_OUT 中重置行为需审查
+- **AuthGuard useEffect 依赖问题** — pre-existing，`[requireAuth]` 依赖可能导致 prop 切换时状态不一致，非本 story 引入
+- **无测试覆盖** — pre-existing，项目无自动化测试框架，auth 离线/超时逻辑依赖手动验证
+
+## Deferred from: code review of 8-10-profiles-table-extension (2026-04-29)
+
+- **非原子操作：login_logs 与 login_count 状态不一致** — MVP 设计约束，两个表在不同 DB 层无法单事务，login_logs 插入成功后 increment_login_count 可能失败
+- **错误分类不当 - profileError 仅 warn** — MVP 设计，更新失败静默忽略不阻塞登录，严重错误无告警机制
+- **CHECK 约束使用 text 而非 enum** — PostgreSQL enum 修改成本高，CHECK 约束足够 MVP，预存讨论
+- **成功/失败响应状态码混乱** — 有意设计所有分支返回 200 不阻塞登录，客户端无法通过状态码判断实际结果
+- **时间精度依赖数据库时钟** — MVP 单数据库，分布式场景数据库时钟可能与应用服务器不同步
+- **无审计日志** — login_logs 表已覆盖登录审计，profiles 更新审计非 MVP 需求

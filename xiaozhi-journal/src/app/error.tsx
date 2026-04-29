@@ -28,6 +28,7 @@ export default function Error({
           页面遇到了意外错误，请稍后重试。
         </p>
         <button
+          type="button"
           onClick={reset}
           className="px-8 py-3 bg-accent text-white rounded-xl font-medium hover:bg-accent-hover transition-colors"
         >

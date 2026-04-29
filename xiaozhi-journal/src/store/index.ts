@@ -284,55 +284,65 @@ export function initializeAuth() {
   const store = useAppStore.getState();
   store.setAuthLoading(true);
 
-  const sessionPromise = supabase.auth.getSession();
-  const timeoutId = setTimeout(() => {
-    setUserId(null);
-    store.setUser(null);
-    store.setAuthLoading(false);
-  }, 5000);
-
-  sessionPromise.then(({ data: { session } }) => {
-    clearTimeout(timeoutId);
-    const isAuthenticated = !!session?.user;
-    store.setUser(session?.user ?? null);
-    store.setAuthLoading(false);
-    if (isAuthenticated) {
-      setUserId(session!.user.id);
-      useAppStore.getState().startRealtimeSubscription();
-      useAppStore.getState().initOfflineSync();
-      // 记录 session 恢复
-      initialLoginLogged = true;
-      recordLoginLog(session!.user.id, 'email');
+  // Fallback timeout: 10s 后强制结束加载状态（防止离线/网络异常时无限加载）
+  const fallbackTimeoutId = setTimeout(() => {
+    const currentStore = useAppStore.getState();
+    if (currentStore.authLoading) {
+      console.warn('[Auth] INITIAL_SESSION timeout, forcing authLoading=false');
+      currentStore.setAuthLoading(false);
     }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  }).catch((_err) => {
-    clearTimeout(timeoutId);
-    store.setUser(null);
-    store.setAuthLoading(false);
-  });
+  }, 10000);
 
+  // Supabase Auth v2: onAuthStateChange 订阅时立即发送 INITIAL_SESSION 事件
+  // 无需 getSession() 调用，避免竞态条件
   if (!activeSubscription) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const isAuthenticated = !!session?.user;
-      useAppStore.getState().setUser(session?.user ?? null);
-      useAppStore.getState().setAuthLoading(false);
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      const currentStore = useAppStore.getState();
+
+      // INITIAL_SESSION: 首次加载完成，设置初始状态
+      if (event === 'INITIAL_SESSION') {
+        clearTimeout(fallbackTimeoutId);
+        currentStore.setUser(session?.user ?? null);
+        currentStore.setAuthLoading(false);
         if (isAuthenticated) {
           setUserId(session!.user.id);
-          useAppStore.getState().startRealtimeSubscription();
-          useAppStore.getState().initOfflineSync();
-          // 仅 SIGNED_IN 时记录（TOKEN_REFRESHED 不记录），去重 session 恢复已记录
-          if (event === 'SIGNED_IN' && !initialLoginLogged) {
+          currentStore.startRealtimeSubscription();
+          currentStore.initOfflineSync();
+          initialLoginLogged = true;
+          recordLoginLog(session!.user.id, 'email');
+        }
+        return;
+      }
+
+      // 其他事件：更新状态但不重复设置 authLoading（已在 INITIAL_SESSION 中设置）
+      currentStore.setUser(session?.user ?? null);
+
+      if (event === 'SIGNED_IN') {
+        if (isAuthenticated) {
+          setUserId(session!.user.id);
+          currentStore.startRealtimeSubscription();
+          currentStore.initOfflineSync();
+          // 仅 SIGNED_IN 时记录（去重 session 恢复已记录）
+          if (!initialLoginLogged) {
             recordLoginLog(session!.user.id, 'email');
           }
         }
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Token 刷新，无需额外处理，user 已更新
+        if (isAuthenticated) {
+          setUserId(session!.user.id);
+        }
       } else if (event === 'SIGNED_OUT') {
-        useAppStore.getState().stopRealtimeSubscription();
-        useAppStore.getState().stopOfflineSync();
-        useAppStore.getState().clearAllData();
+        clearTimeout(fallbackTimeoutId);
+        currentStore.stopRealtimeSubscription();
+        currentStore.stopOfflineSync();
+        currentStore.clearAllData();
         clearDbData();
         setUserId(null);
         initialized = false;
+        initialLoginLogged = false;
+        activeSubscription = null;
       }
     });
     activeSubscription = subscription;

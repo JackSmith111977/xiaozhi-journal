@@ -57,6 +57,7 @@ export default function JournalDetail() {
     <main className="min-h-screen bg-[#FDF8F5]">
       <div className="max-w-[680px] mx-auto px-6 py-12">
         <button
+          type="button"
           onClick={() => router.back()}
           className="text-[#D4856A] text-sm mb-6 hover:underline focus-visible:outline-2 focus-visible:outline-[#D4856A] focus-visible:outline-offset-2 rounded"
         >

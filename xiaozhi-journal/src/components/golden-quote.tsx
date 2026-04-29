@@ -161,6 +161,7 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
           className="bg-secondary rounded-3xl py-6 px-6 shadow-md relative border-l-[3px] border-accent"
         >
           <button
+            type="button"
             onClick={handleShare}
             className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
             aria-label="分享金句"
@@ -202,6 +203,7 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
             {/* Action buttons */}
             <div className="flex gap-2 mt-4">
               <button
+                type="button"
                 onClick={handleCopy}
                 disabled={loading}
                 className={`flex-1 py-2.5 px-2 border rounded-xl text-[13px] flex flex-col items-center gap-1 transition-all
@@ -214,6 +216,7 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
                 {feedback?.action === 'copy' ? '✓' : '复制'}
               </button>
               <button
+                type="button"
                 onClick={handleDownload}
                 disabled={loading}
                 className={`flex-1 py-2.5 px-2 border rounded-xl text-[13px] flex flex-col items-center gap-1 transition-all
@@ -226,6 +229,7 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
                 {feedback?.action === 'download' ? '✓' : '保存'}
               </button>
               <button
+                type="button"
                 onClick={handleCopyText}
                 disabled={loading}
                 className={`flex-1 py-2.5 px-2 border rounded-xl text-[13px] flex flex-col items-center gap-1 transition-all
@@ -242,6 +246,7 @@ export function GoldenQuote({ quote, date, journalId, journal }: GoldenQuoteProp
             {/* Back button */}
             <div className="text-center mt-2">
               <button
+                type="button"
                 onClick={handleBack}
                 className="py-2 px-6 text-[13px] text-accent hover:underline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 rounded"
               >

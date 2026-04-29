@@ -37,6 +37,7 @@ export default function GlobalError({
               应用加载失败，请稍后重试。
             </p>
             <button
+              type="button"
               onClick={reset}
               style={{
                 padding: '0.75rem 2rem',

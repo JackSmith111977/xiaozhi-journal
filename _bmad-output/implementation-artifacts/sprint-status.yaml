@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-22
-last_updated: 2026-04-28
+last_updated: 2026-04-29
 project: Xiaozhi Journal
 project_key: NOKEY
 tracking_system: file-system
@@ -79,8 +79,8 @@ development_status:
   8-7-api-auth-middleware: done
   8-8-indexeddb-user-isolation: done
   8-9-audit-log-tables: done
-  8-10-profiles-table-extension: review
-  8-11-auth-init-race-fix: backlog
+  8-10-profiles-table-extension: done
+  8-11-auth-init-race-fix: done
   8-12-registration-ux-refactor: backlog
   8-13-login-ux-enhancement: backlog
   8-14-global-theme-system: backlog

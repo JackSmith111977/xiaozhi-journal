@@ -1,5 +1,5 @@
 ---
-status: review
+status: done
 story_id: "8.10"
 epic_num: 8
 story_num: 10
@@ -187,3 +187,14 @@ qwen3.6-plus
 ## Change Log
 
 Story 8.10: profiles 表扩展 — 新增 login_count, last_login, status 字段，登录时自动更新统计。
+
+## Review Findings
+
+- [x] [Review][Patch] SECURITY DEFINER 无权限检查 [`supabase/migrations/011_extend_profiles.sql:8-16`] — ✅ Fixed: 添加 `IF auth.uid() IS DISTINCT FROM user_uuid THEN RAISE EXCEPTION`
+- [x] [Review][Patch] Profile 不存在时静默失败 [`supabase/migrations/011_extend_profiles.sql:11-14`] — ✅ Fixed: 添加 `GET DIAGNOSTICS rows_affected = ROW_COUNT` + `IF rows_affected = 0 THEN RAISE EXCEPTION`
+- [x] [Review][Defer] 非原子操作：login_logs 与 login_count 状态不一致 [`src/app/api/auth/login-log/route.ts:24-48`] — deferred, MVP 设计约束，两个表在不同 DB 层无法单事务
+- [x] [Review][Defer] 错误分类不当 - profileError 仅 warn [`src/app/api/auth/login-log/route.ts:45-48`] — deferred, MVP 设计，更新失败静默忽略
+- [x] [Review][Defer] CHECK 约束使用 text 而非 enum [`supabase/migrations/011_extend_profiles.sql:4-5`] — deferred, PostgreSQL enum 修改成本高，CHECK 约束足够
+- [x] [Review][Defer] 成功/失败响应状态码混乱 [`src/app/api/auth/login-log/route.ts`] — deferred,有意设计 200 不阻塞登录
+- [x] [Review][Defer] 时间精度依赖数据库时钟 [`supabase/migrations/011_extend_profiles.sql:13`] — deferred, MVP 单 DB，分布式场景后续优化
+- [x] [Review][Defer] 无审计日志 — deferred, login_logs 表已覆盖登录审计

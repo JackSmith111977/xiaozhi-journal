@@ -129,6 +129,7 @@ function CallbackContent() {
           </h1>
           <p className="text-muted-foreground mb-6">链接已过期，请重新申请重置。</p>
           <button
+            type="button"
             onClick={() => router.push('/auth/login')}
             className="px-6 py-3 rounded-xl text-white font-medium bg-primary"
           >
@@ -157,12 +158,14 @@ function CallbackContent() {
             邮箱已验证，开始你的第一篇日记吧
           </p>
           <button
+            type="button"
             onClick={() => router.push('/auth/settings')}
             className="w-full py-3 rounded-xl text-primary-foreground font-medium bg-primary"
           >
             设置个人资料
           </button>
           <button
+            type="button"
             onClick={() => router.push('/')}
             className="w-full py-3 rounded-xl text-accent font-medium mt-3 hover:underline"
           >
