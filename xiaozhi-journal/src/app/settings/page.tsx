@@ -8,6 +8,7 @@ import { exportUserData } from '@/lib/export';
 import { deleteAccount } from '@/lib/account';
 import { useAppStore } from '@/store';
 import { AuthGuard } from '@/components/auth-guard';
+import { useTheme } from '@/hooks/use-theme';
 import { motion } from 'motion/react';
 
 interface Profile {
@@ -52,6 +53,17 @@ function SettingsContent() {
   const [deletingByok, setDeletingByok] = useState(false);
   const [showByokDeleteConfirm, setShowByokDeleteConfirm] = useState(false);
   const [loadingByok, setLoadingByok] = useState(true);
+
+  // Theme state
+  const { mode, setMode, resetToAuto } = useTheme();
+
+  // Theme options
+  const THEME_OPTIONS = [
+    { label: '自动', value: 'auto' as const },
+    { label: '暖阳', value: 'warm-sun' as const },
+    { label: '星空', value: 'starry-night' as const },
+    { label: '跟随系统', value: 'system' as const },
+  ];
 
   // Cleanup message timers on unmount
   useEffect(() => {
@@ -422,6 +434,43 @@ function SettingsContent() {
             </div>
           </div>
         )}
+
+        {/* 主题设置 */}
+        <div className="mb-8">
+          <h2 className="text-lg text-foreground mb-3 font-serif">主题</h2>
+          {mode !== 'auto' && (
+            <p className="text-xs text-accent mb-2">
+              当前为手动模式，已覆盖自动切换
+            </p>
+          )}
+          <div className="flex gap-2 mb-2" role="radiogroup" aria-label="主题模式">
+            {THEME_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={mode === opt.value}
+                onClick={() => setMode(opt.value)}
+                className={`flex-1 py-2 px-1 text-xs rounded-lg border transition-colors ${
+                  mode === opt.value
+                    ? 'bg-accent text-primary-foreground border-accent'
+                    : 'bg-secondary text-muted-foreground border-border'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {mode !== 'auto' && (
+            <button
+              type="button"
+              onClick={resetToAuto}
+              className="text-xs text-accent hover:underline"
+            >
+              恢复自动切换
+            </button>
+          )}
+        </div>
 
         {/* BYOK 配置 */}
         <div className="mb-8 pt-8 border-t border-border">

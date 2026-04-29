@@ -83,7 +83,7 @@ development_status:
   8-11-auth-init-race-fix: done
   8-12-registration-ux-refactor: done
   8-13-login-ux-enhancement: done
-  8-14-global-theme-system: backlog
+  8-14-global-theme-system: review
   epic-8-retrospective: pending
 
   # Epic 9: 数据云端同步
