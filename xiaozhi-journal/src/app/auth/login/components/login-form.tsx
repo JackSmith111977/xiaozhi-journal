@@ -46,17 +46,16 @@ export function LoginForm({ email, onEmailChange, onModeSwitch }: LoginFormProps
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [rememberDuration, setRememberDuration] = useState<
-    'none' | '24h' | '7d' | '30d'
-  >(() => readSavedPreferences().rememberDuration);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldReduceMotion = useReducedMotion();
 
-  // Restore remembered email on mount
-  useEffect(() => {
-    const savedEmail = readSavedPreferences().email;
-    if (savedEmail) onEmailChange(savedEmail);
-  }, [onEmailChange]);
+  // Read preferences once on mount, derive all state from it
+  const [rememberDuration, setRememberDuration] = useState<'none' | '24h' | '7d' | '30d'>(() => {
+    const saved = readSavedPreferences();
+    // Restore email once during init
+    if (saved.email) onEmailChange(saved.email);
+    return saved.rememberDuration;
+  });
 
   useEffect(() => {
     return () => {
@@ -73,14 +72,14 @@ export function LoginForm({ email, onEmailChange, onModeSwitch }: LoginFormProps
     setLoading(true);
 
     try {
-      await signIn(email, password);
+      await signIn(email, password, rememberDuration);
 
       // Remember email and duration
       try {
         localStorage.setItem(LAST_EMAIL_KEY, email);
         localStorage.setItem(LAST_REMEMBER_KEY, rememberDuration);
-      } catch {
-        // localStorage unavailable
+      } catch (e) {
+        console.warn('Failed to save login preferences:', e);
       }
 
       // Note: "不保持" session expiry is handled by the browser's cookie
@@ -90,16 +89,13 @@ export function LoginForm({ email, onEmailChange, onModeSwitch }: LoginFormProps
 
       router.push('/');
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        if (err.message?.includes('Email not confirmed')) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('Email not confirmed')) {
           setError('请先验证你的邮箱，检查收件箱或重新发送验证邮件');
-        } else if (err.message?.includes('Invalid login credentials')) {
-          setError('邮箱或密码不正确');
-        } else {
-          setError(err.message);
-        }
+      } else if (message.includes('Invalid login credentials')) {
+        setError('邮箱或密码不正确');
       } else {
-        setError('登录失败，请稍后重试');
+        setError(message);
       }
     } finally {
       setLoading(false);
@@ -146,6 +142,7 @@ export function LoginForm({ email, onEmailChange, onModeSwitch }: LoginFormProps
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
             aria-label={showPassword ? '隐藏密码' : '显示密码'}
+            aria-pressed={showPassword}
             className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -155,11 +152,13 @@ export function LoginForm({ email, onEmailChange, onModeSwitch }: LoginFormProps
         {/* Remember duration selector */}
         <div className="mb-6">
           <p className="text-xs text-muted-foreground mb-2">保持登录</p>
-          <div className="flex gap-2">
+          <div className="flex gap-2" role="radiogroup" aria-label="保持登录时长">
             {REMEMBER_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
+                role="radio"
+                aria-checked={rememberDuration === opt.value}
                 onClick={() => setRememberDuration(opt.value)}
                 className={`flex-1 py-2 px-1 text-xs rounded-lg border transition-colors ${
                   rememberDuration === opt.value

@@ -39,19 +39,22 @@ export async function signUp(email: string, password: string) {
 // ── Sign In ───────────────────────────────────────────────────────────────────
 // Throws AuthError with code 'email_not_confirmed' if user hasn't confirmed email.
 
-export async function signIn(email: string, password: string) {
+export async function signIn(email: string, password: string, rememberDuration?: 'none' | '24h' | '7d' | '30d') {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
-    // Supabase returns "Email not confirmed" error when enable_confirmations is true
-    // and user tries to sign in before confirming email.
     if (error.message?.includes('Email not confirmed')) {
       throw new AuthError('email_not_confirmed', '请先验证你的邮箱，检查收件箱或重新发送验证邮件');
     }
     throw new AuthError(error.status?.toString() ?? 'unknown', error.message);
+  }
+
+  // "不保持" = 立即清除 session
+  if (rememberDuration === 'none' && data.session) {
+    await supabase.auth.signOut();
   }
 
   return data.user;
