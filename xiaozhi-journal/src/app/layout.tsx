@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Noto_Serif_SC, Noto_Sans_SC } from "next/font/google";
 import "./globals.css";
 import { BfcacheHandler } from "@/components/bfcache-handler";
-import { ThemeHydration } from "@/components/theme-hydration";
 
 const notoSerif = Noto_Serif_SC({
   variable: "--font-noto-serif",
@@ -21,18 +20,32 @@ export const metadata: Metadata = {
   description: "被理解的日记",
 };
 
-function getTimeTheme(): "warm-sun" | "starry-night" {
-  const hour = new Date().getHours();
-  return hour >= 6 && hour < 18 ? "warm-sun" : "starry-night";
+import { headers } from "next/headers";
+import { getTimeTheme } from "@/lib/theme";
+import { ThemeHydration } from "@/components/theme-hydration";
+
+async function resolveDarkClass(): Promise<boolean> {
+  const h = await headers();
+  // Vercel injects user IP timezone from CloudFront/edge headers
+  const tz = h.get("x-vercel-ip-timezone");
+
+  if (tz) {
+    const hour = Number(
+      new Date().toLocaleString("en-US", { timeZone: tz, hour: "numeric", hourCycle: "h23" }),
+    );
+    return hour >= 6 && hour < 18 ? false : true;
+  }
+
+  // Fallback: server local time (non-Vercel deployments)
+  return getTimeTheme() === "starry-night";
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const theme = getTimeTheme();
-  const isDark = theme === "starry-night";
+  const isDark = await resolveDarkClass();
 
   return (
     <html

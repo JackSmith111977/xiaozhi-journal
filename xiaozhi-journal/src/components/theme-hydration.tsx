@@ -1,26 +1,18 @@
-"use client";
-
-import { useEffect } from "react";
-import { getSavedThemeMode, resolveTheme } from "@/lib/theme";
-
 /**
  * Client-side hydration corrector.
- * Runs once after mount to align the document dark class with
- * the user's saved preference (auto/system/manual), correcting
- * any SSR/client time mismatch.
+ * Uses an inline <script> to apply the theme class before first paint,
+ * eliminating FOUC. Falls back to SSR-injected class if localStorage
+ * is unavailable.
  */
 export function ThemeHydration() {
-  useEffect(() => {
-    const mode = getSavedThemeMode();
-    const { isDark } = resolveTheme(mode);
-    const root = document.documentElement;
-
-    if (isDark) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-  }, []);
-
-  return null;
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `(function(){try{var m=localStorage.getItem('xiaozhi:themeMode');
+if(!m||m==='auto'){var h=new Date().getHours();if(h>=6&&h<18)return}else{
+var d=false;if(m==='starry-night')d=true;else if(m==='system'){d=window.matchMedia('(prefers-color-scheme: dark)').matches}}
+if(d)document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark')}catch(e){}})()`,
+      }}
+    />
+  );
 }

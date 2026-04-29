@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-22
-last_updated: 2026-04-29
+last_updated: 2026-04-30
 project: Xiaozhi Journal
 project_key: NOKEY
 tracking_system: file-system
@@ -69,7 +69,7 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 8: 用户注册与登录（安全修复扩展）
-  epic-8: in-progress
+  epic-8: done
   8-1-email-registration: done
   8-2-email-login: done
   8-3-password-reset: done
@@ -83,7 +83,7 @@ development_status:
   8-11-auth-init-race-fix: done
   8-12-registration-ux-refactor: done
   8-13-login-ux-enhancement: done
-  8-14-global-theme-system: review
+  8-14-global-theme-system: done
   epic-8-retrospective: pending
 
   # Epic 9: 数据云端同步

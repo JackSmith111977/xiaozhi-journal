@@ -1,5 +1,5 @@
 ---
-status: review
+status: done
 story_id: "8.14"
 epic_num: 8
 story_num: 14
@@ -237,3 +237,19 @@ export function useTheme() {
 - [Source: project-context.md#Color Palette "暖日"]
 - [Source: project-context.md#File Naming Conventions]
 - [Source: memory/code-review-gated/MEMORY.md#Naming Conventions Registry]
+
+### Review Findings
+
+#### Decision Needed
+- [x] [Review][Decision] 未使用的 CSS 变量无消费者 — **用户决定保留**，作为未来 sidebar/chart 组件预留。[src/app/globals.css:93-113]
+
+#### Patches
+- [x] [Review][Patch] 服务端时区导致 hydration 不匹配 — **FIXED**: 改用 `next/headers` 的 `headers()` 获取 Vercel 注入的 `x-vercel-ip-timezone` header，按用户 IP 时区计算。非 Vercel 部署 fallback 到 `getTimeTheme()` 服务器本地时间。[src/app/layout.tsx:27-41]
+- [x] [Review][Patch] `getTimeTheme()` 重复定义 — **FIXED**: 移除 `layout.tsx` 中的副本，统一从 `@/lib/theme` import。[src/app/layout.tsx:24]
+- [x] [Review][Patch] ThemeHydration 在 post-paint 修正 `dark` class — **FIXED**: 改用内联 `<script dangerouslySetInnerHTML>` 在 `<head>` 中同步执行，首次绘制前应用 class，消除 FOUC。[src/components/theme-hydration.tsx]
+
+#### Deferred（非本次引入）
+- [x] [Review][Defer] 设置页主题选项可能在 hydration 后短暂显示错误选中值 — 用户从 localStorage 读取模式前 UI 已渲染。已存在，非本次变更引入。[src/app/settings/page.tsx]
+- [x] [Review][Defer] `body` 全局 transition 在所有页面切换时触发 300ms 颜色过渡 — 不仅限于主题切换场景。预存在问题。[src/app/globals.css:138]
+- [x] [Review][Defer] System 模式下 `matchMedia` change 事件触发时无效重渲染 — handler 调用 `setModeState("system")` 即使当前已是 system。预存在设计问题。[src/hooks/use-theme.ts:31]
+- [x] [Review][Defer] 无跨 tab 主题同步 — 多 tab 打开时各自独立读写 localStorage，可能显示不同主题。预存在限制。[src/lib/theme.ts]
