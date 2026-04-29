@@ -81,7 +81,7 @@ development_status:
   8-9-audit-log-tables: done
   8-10-profiles-table-extension: done
   8-11-auth-init-race-fix: done
-  8-12-registration-ux-refactor: backlog
+  8-12-registration-ux-refactor: done
   8-13-login-ux-enhancement: backlog
   8-14-global-theme-system: backlog
   epic-8-retrospective: pending
