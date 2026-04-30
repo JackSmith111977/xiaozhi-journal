@@ -68,7 +68,7 @@ function parseAIResponse(text: string): AIResponse {
   let jsonStr = text.trim();
   const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) {
-    jsonStr = codeBlockMatch[1].trim();
+    jsonStr = codeBlockMatch[1]!.trim();
   }
 
   const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
@@ -82,7 +82,7 @@ function parseAIResponse(text: string): AIResponse {
 }
 
 function getFallbackResponse(): AIResponse {
-  const pick = FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)];
+  const pick = FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)]!;
   return {
     response: '抱歉，暂时无法生成回应。但这里有一句送给你的话：',
     goldenQuote: pick.quote,
