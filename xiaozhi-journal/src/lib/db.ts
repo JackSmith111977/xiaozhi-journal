@@ -2,7 +2,7 @@ import { openDB, type IDBPDatabase } from 'idb';
 import type { Journal } from '@/types';
 
 const DB_NAME = 'xiaozhi-journal';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let currentUserId: string | null = null;
 
@@ -33,8 +33,9 @@ async function getDB() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion) {
-        // v1 → v2: 清除旧版无 prefix 数据，重建 stores（无 keyPath）
-        if (oldVersion < 2) {
+        // v2 → v3: 无条件重建 stores，确保 schema 一致
+        // 之前 v1→v2 的升级路径可能没在所有浏览器生效
+        if (oldVersion < 3) {
           if (db.objectStoreNames.contains('journals')) {
             db.deleteObjectStore('journals');
           }
