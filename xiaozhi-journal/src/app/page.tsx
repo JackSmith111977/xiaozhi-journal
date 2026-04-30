@@ -15,6 +15,7 @@ import { GoldenQuote } from '@/components/golden-quote';
 import { EmptyState } from '@/components/empty-state';
 import { CapsulePopup } from '@/components/capsule-popup';
 import { getMeta, setMeta, addJournal as dbAdd } from '@/lib/db';
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import { checkTimeCapsule, recordShown } from '@/lib/time-capsule';
 import { SEED_JOURNALS } from '@/lib/seed-data';
@@ -216,13 +217,16 @@ if (!initialized || loading) {
         )}
 
         {/* History Link */}
-        {journals.length > 0 && (
-          <div className="text-center mt-8">
-            <Link href="/history" className="text-sm text-accent hover:underline">
-              查看过往记录
-            </Link>
-          </div>
-        )}
+        <motion.div
+          className="text-center mt-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Link href="/history" className="text-sm text-accent hover:underline">
+            查看过往记录
+          </Link>
+        </motion.div>
       </div>
     </main>
   );
