@@ -120,11 +120,50 @@ If `{sprint_status}` file does not exist, note that story status was updated in 
 >
 > **Story Status:** `{new_status}`
 > **Issues Fixed:** <fixed_count>
-> **Action Items Created:** <action_count>
+> **Issues Created:** <action_count>
 > **Deferred:** <W>
 > **Dismissed:** <R>
 
-### 7. Memory Integration
+### 7. Confirm review completion with user
+
+**HALT** — Before proceeding, confirm with the user:
+
+If `{new_status}` = `done`:
+
+> **审查已完成，所有问题已解决。确认以下操作：**
+> 1. 更新故事状态为 `done`
+> 2. 同步 sprint-status.yaml
+> 3. 提交更改并推送到远程仓库
+>
+> **是否确认 review 完毕？如果是，回复 "确认" 或 "yes"，我将执行 commit + push。如果需要重新审查或做其他操作，请说明。**
+
+If `{new_status}` = `in-progress`:
+
+> **审查发现已记录，故事仍在进行中。你想：**
+> 1. 现在修复剩余问题
+> 2. 稍后继续
+> 3. 重新审查
+>
+> **请回复数字选择。**
+
+**WAIT FOR INPUT** — Do not proceed to memory integration or session close until the user confirms or chooses an option.
+
+#### If user confirms done
+
+1. Stage the changed files (story file, sprint-status.yaml, and any code fixes applied during this session)
+2. Create a commit with a descriptive message summarizing what was reviewed and fixed
+3. Push to the remote repository
+4. Report the commit hash and push status to the user
+
+#### If user requests re-review
+
+Return to the appropriate step (step-02-review for full re-review, or re-apply specific patches).
+
+#### If user has other requests
+
+Handle them, then return to this confirmation point.
+
+### 8. Memory Integration
 
 Capture insights from this review session:
 - New project conventions discovered → update MEMORY.md Standards/API/Naming Registries
@@ -132,7 +171,7 @@ Capture insights from this review session:
 - User rejected suggestion types → update MEMORY.md Review Preferences
 - Write session log to `sessions/YYYY-MM-DD.md`
 
-### 8. Next steps
+### 9. Next steps
 
 Present the user with follow-up options:
 
